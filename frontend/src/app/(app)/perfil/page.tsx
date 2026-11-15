@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AvisoFlotante, useAviso } from "@/components/app/Aviso";
+import EliminarCuenta from "@/components/app/EliminarCuenta";
 import FondoVivo from "@/components/app/FondoVivo";
 import {
   IconoAjustes,
@@ -528,6 +529,8 @@ export default function Perfil() {
                 </button>
               </form>
             )}
+
+            {pestana === "seguridad" && perfil && <EliminarCuenta perfil={perfil} />}
 
             {pestana === "reportar" && (
               <form
