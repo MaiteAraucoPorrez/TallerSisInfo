@@ -76,9 +76,9 @@ public class ReglasReporteNuevoTests
 
     [Theory]
     [InlineData("OTRA_COSA", null, "Una descripción bastante larga", ReglasReporte.MensajeMotivo)]
-    [InlineData("COMUNIDAD_INAPROPIADA", null, "Una descripción bastante larga", ReglasReporte.MensajeMotivo)]
+    [InlineData("COMUNIDAD_INAPROPIADA", null, "Una descripción bastante larga", ReglasReporte.MensajeFaltaComunidad)]
     [InlineData("LUGAR_INCORRECTO", null, "Una descripción bastante larga", ReglasReporte.MensajeFaltaLugar)]
-    [InlineData("ERROR_APP", 4, "Una descripción bastante larga", ReglasReporte.MensajeLugarDeMas)]
+    [InlineData("ERROR_APP", 4, "Una descripción bastante larga", ReglasReporte.MensajeObjetoQueNoCorresponde)]
     [InlineData("ERROR_APP", null, "  corto   ", ReglasReporte.MensajeDescripcionCorta)]
     public void Un_reporte_mal_armado_dice_que_falta(string motivo, int? lugar, string descripcion, string mensaje)
         => Assert.Equal(mensaje, ReglasReporte.ValidarNuevo(motivo, lugar, descripcion));
@@ -129,7 +129,7 @@ public class CatalogoAdminServiceTests
         public Task<string?> CambiarEstadoLugarAsync(int lugarId, string estado, int adminId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<bool?> CambiarValidacionLugarAsync(int lugarId, bool validado, int adminId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<List<ReporteAdminDto>> ListarReportesAsync(CancellationToken ct = default) => throw new NotSupportedException();
-        public Task<string?> ResolverReporteAsync(int reporteId, string estado, int adminId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<RevisionReporte?> ResolverReporteAsync(int reporteId, string estado, string? respuesta, int adminId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<List<TurnoConsultaRag>> ListarConsultasRagAsync(int limite, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<MetricasAdminDto> MetricasAsync(CancellationToken ct = default) => throw new NotSupportedException();
     }
@@ -231,15 +231,18 @@ public class ReporteServiceTests
 
         public Task<List<LugarReportableDto>> ListarLugaresAsync(CancellationToken ct = default)
             => Task.FromResult(new List<LugarReportableDto> { new(4, "Biblioteca Central") });
-        public Task<bool> LugarExisteAsync(int lugarId, CancellationToken ct = default) => Task.FromResult(lugarId == 4);
+        public Task<bool> ObjetoExisteAsync(string objeto, int id, CancellationToken ct = default)
+            => Task.FromResult(objeto == ReglasReporte.ObjetoLugar && id == 4);
         public Task<int> ContarPendientesAsync(int usuarioId, CancellationToken ct = default) => Task.FromResult(Pendientes);
-        public Task<bool> TienePendienteDelLugarAsync(int usuarioId, int lugarId, CancellationToken ct = default)
-            => Task.FromResult(LugaresReportados.Contains(lugarId));
-        public Task<int> CrearAsync(int usuarioId, string motivo, int? lugarId, string descripcion, CancellationToken ct = default)
+        public Task<bool> TienePendienteSobreAsync(int usuarioId, string objeto, int id, CancellationToken ct = default)
+            => Task.FromResult(objeto == ReglasReporte.ObjetoLugar && LugaresReportados.Contains(id));
+        public Task<int> CrearAsync(int usuarioId, string motivo, int? lugarId, int? comunidadId, int? eventoId, string descripcion,
+            CancellationToken ct = default)
         {
             Creados.Add((motivo, lugarId, descripcion));
             return Task.FromResult(12);
         }
+        public Task<List<MiReporteDto>> ListarMiosAsync(int usuarioId, CancellationToken ct = default) => throw new NotSupportedException();
     }
 
     private static (ReporteService Servicio, RepositorioFalso Repo) Crear()
@@ -288,10 +291,10 @@ public class ReporteServiceTests
     }
 
     [Fact]
-    public async Task Con_3_pendientes_no_se_aceptan_mas()
+    public async Task Con_5_pendientes_no_se_aceptan_mas()
     {
         var (servicio, repo) = Crear();
-        repo.Pendientes = 3;
+        repo.Pendientes = 5;
         var ex = await Assert.ThrowsAsync<ReglaNegocioException>(() =>
             servicio.CrearAsync(1, new NuevoReporteDto("SUGERENCIA", null, "Una sugerencia bastante útil")));
         Assert.Equal("DEMASIADOS_PENDIENTES", ex.Codigo);

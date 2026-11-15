@@ -36,17 +36,21 @@ public class ResolverReporteServiceTests
     {
         public Dictionary<int, string> Reportes { get; } = new() { [1] = "PENDIENTE", [2] = "RESUELTO" };
         public (int Id, string Estado, int Admin)? UltimaRevision { get; private set; }
+        public string? UltimaRespuesta { get; private set; }
 
-        public Task<string?> ResolverReporteAsync(int reporteId, string estado, int adminId, CancellationToken ct = default)
+        public Task<RevisionReporte?> ResolverReporteAsync(int reporteId, string estado, string? respuesta, int adminId, CancellationToken ct = default)
         {
-            if (!Reportes.TryGetValue(reporteId, out var anterior)) return Task.FromResult<string?>(null);
+            if (!Reportes.TryGetValue(reporteId, out var anterior)) return Task.FromResult<RevisionReporte?>(null);
             if (anterior == "PENDIENTE")
             {
                 Reportes[reporteId] = estado;
                 UltimaRevision = (reporteId, estado, adminId);
+                UltimaRespuesta = respuesta;
             }
-            return Task.FromResult<string?>(anterior);
+            return Task.FromResult<RevisionReporte?>(new RevisionReporte(anterior, Autor));
         }
+
+        public const int Autor = 7;
 
         public Task<bool?> CambiarValidacionLugarAsync(int lugarId, bool validado, int adminId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<ResumenAdminDto> ResumenAsync(CancellationToken ct = default) => throw new NotSupportedException();
