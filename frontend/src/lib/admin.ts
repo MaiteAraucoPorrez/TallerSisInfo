@@ -39,6 +39,21 @@ export type ReporteAdmin = {
   /** HU28: el creador de la comunidad o del evento reportado (estudiante); null si no aplica o ya no existe. */
   usuarioReportadoId?: number | null;
   usuarioReportadoNombre?: string | null;
+  /** HU27: a qué apunta (null en «algo no funciona» y sugerencias), su id, y la revisión del admin. */
+  objetoTipo?: "LUGAR" | "COMUNIDAD" | "EVENTO" | null;
+  objetoId?: number | null;
+  respuesta?: string | null;
+  revisadoEn?: string | null;
+};
+
+/** HU27: la respuesta opcional al resolver o descartar un reporte. */
+export const LARGO_MAXIMO_RESPUESTA = 500;
+
+/** HU27: cómo se nombra el objeto del reporte en la bandeja. */
+export const TIPO_OBJETO_REPORTE: Record<"LUGAR" | "COMUNIDAD" | "EVENTO", string> = {
+  LUGAR: "Lugar",
+  COMUNIDAD: "Comunidad",
+  EVENTO: "Evento",
 };
 
 export type MotivoRechazo = "INYECCION" | "FUERA_DE_ALCANCE" | "BIENESTAR" | "FUERA_DE_REGLAMENTO" | "FUERA_DE_CONTEXTO";
@@ -137,7 +152,11 @@ export const MOTIVO_REPORTE: Record<string, string> = {
 };
 
 export const listarReportes = () => pedirApi<ReporteAdmin[]>("/api/admin/reportes");
-export const resolverReporte = (id: number, estado: "RESUELTO" | "DESCARTADO") =>
-  pedirApi<void>(`/api/admin/reportes/${id}`, { method: "PATCH", body: JSON.stringify({ estado }) });
+/** La respuesta vacía no se manda: es opcional. */
+export const resolverReporte = (id: number, estado: "RESUELTO" | "DESCARTADO", respuesta = "") =>
+  pedirApi<void>(`/api/admin/reportes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ estado, respuesta: respuesta.trim() || null }),
+  });
 export const listarConsultasRag = (limite = 50) => pedirApi<ConsultaRag[]>(`/api/admin/auditoria-rag?limite=${limite}`);
 export const obtenerMetricas = () => pedirApi<MetricasAdmin>("/api/admin/metricas");

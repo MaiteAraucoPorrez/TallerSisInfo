@@ -14,6 +14,7 @@ import {
   obtenerConfiguracion,
 } from "@/lib/notificaciones";
 import { hhmm } from "@/lib/puentes";
+import { enlaceMisReportes } from "@/lib/reglasReportes";
 import { useAlReconectar, useEventoEnVivo } from "@/lib/tiempoReal";
 import estilos from "./Notificaciones.module.css";
 
@@ -67,9 +68,12 @@ const TIPOS = {
   // HU12: saludos de «Libres contigo». Llevan a esa pestaña, donde se responden o se ve el correo.
   CONEXION_SOLICITADA: { titulo: "Alguien quiere conocerte", clase: "invitacion", Icono: IconoPersonas },
   CONEXION_ACEPTADA: { titulo: "Aceptaron tu saludo", clase: "invitacion", Icono: IconoPersonas },
+  // HU27: un administrador revisó tu reporte. Lleva a «Mis reportes», donde está la respuesta completa.
+  REPORTE_RESUELTO: { titulo: "Revisamos tu reporte", clase: "reporte", Icono: IconoBandera },
 } as const;
 
 function rutaDe(n: Notificacion): string {
+  if (n.tipo === "REPORTE_RESUELTO") return enlaceMisReportes(n.reporteId);
   if (n.tipo === "CONEXION_SOLICITADA" || n.tipo === "CONEXION_ACEPTADA") return "/comunidades?pestana=libres";
   if (n.tipo === "PUENTE_DISPONIBLE" || n.tipo === "DESPUES_DE_CLASES") return n.duracionMinutos ? `/recomendaciones?min=${n.duracionMinutos}` : "/recomendaciones";
   return n.comunidadId ? `/comunidades?pestana=descubrir&comunidad=${n.comunidadId}` : "/comunidades?pestana=descubrir";
@@ -386,7 +390,7 @@ export default function Notificaciones({ recarga }: Props) {
                                       )}
                                       {n.tipo !== "SANCION_ADVERTENCIA" && (
                                         <button type="button" className={estilos.ver} onClick={() => ver(n)}>
-                                          Ver
+                                          {n.tipo === "REPORTE_RESUELTO" ? "Mis reportes" : "Ver"}
                                         </button>
                                       )}
                                     </div>

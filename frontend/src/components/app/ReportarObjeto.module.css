@@ -1,0 +1,161 @@
+.disparador {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--texto-tenue);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 200ms ease,
+    background-color 200ms ease,
+    transform 160ms var(--curva-salida);
+}
+
+.disparador:active {
+  transform: scale(0.97);
+}
+
+.disparador:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .disparador:hover {
+    background: var(--error-fondo);
+    color: var(--error);
+  }
+}
+
+.modal {
+  gap: 0;
+}
+
+.formulario {
+  display: grid;
+  gap: 16px;
+}
+
+.icono {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.titulos {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nombre {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ayuda {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.ayuda a {
+  color: var(--ucb-azul-medio);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.campo {
+  display: grid;
+  gap: 7px;
+  color: var(--ucb-marino);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.campo textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  resize: vertical;
+  transition:
+    border-color 200ms ease,
+    box-shadow 250ms var(--curva-salida);
+}
+
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--ucb-celeste);
+  box-shadow: 0 0 0 4px rgba(47, 127, 209, 0.16);
+}
+
+.campo textarea[aria-invalid="true"] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.1);
+}
+
+.pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pie small {
+  color: var(--texto-tenue);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.pie .error {
+  color: var(--error);
+  font-weight: 700;
+}
+
+.contador {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.listo {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.listo p {
+  margin: 0 0 6px;
+  color: var(--texto-suave);
+  line-height: 1.5;
+}
+
+.listo > div {
+  width: 100%;
+}
+
+.listoIcono {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: #e4f3ea;
+  color: #1f6f4a;
+}

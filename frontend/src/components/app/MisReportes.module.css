@@ -1,0 +1,233 @@
+.contenedor {
+  display: grid;
+  gap: 16px;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ucb-marino);
+}
+
+.cupo,
+.cupoLleno {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--fondo-suave);
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cupoLleno {
+  background: var(--ucb-amarillo-suave);
+  color: var(--ucb-marino);
+}
+
+.lista {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarjeta {
+  --tono: var(--ucb-amarillo-oscuro);
+  --tono-suave: var(--ucb-amarillo-suave);
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 18px;
+  background: var(--superficie);
+  scroll-margin: 96px;
+}
+
+.resuelto {
+  --tono: #1f6f4a;
+  --tono-suave: #e4f3ea;
+}
+
+.descartado {
+  --tono: var(--texto-suave);
+  --tono-suave: var(--fondo-suave);
+}
+
+.destacado {
+  border-color: color-mix(in srgb, var(--tono) 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tono) 16%, transparent);
+}
+
+.fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.queEs {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.motivo {
+  color: var(--ucb-marino);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.objeto {
+  color: var(--texto-suave);
+  font-size: 0.86rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.estado {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--tono-suave);
+  color: var(--tono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pendiente .estado {
+  color: var(--ucb-marino);
+}
+
+.descripcion {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--texto);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.respuesta {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--tono);
+  border-radius: 4px 14px 14px 4px;
+  background: color-mix(in srgb, var(--tono-suave) 70%, var(--superficie));
+}
+
+.respuestaTitulo {
+  color: var(--tono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.respuesta p {
+  margin: 0;
+  color: var(--texto);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.espera {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.fechas {
+  margin: 0;
+  color: var(--texto-tenue);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.esqueleto {
+  height: 128px;
+  border-radius: 18px;
+  background: var(--fondo-suave);
+}
+
+.vacio,
+.error {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--fondo-suave);
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.vacio p,
+.error p {
+  margin: 0;
+}
+
+.vacioTitulo {
+  color: var(--ucb-marino);
+  font-weight: 800;
+}
+
+.error {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.reintentar {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--ucb-marino);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 160ms var(--curva-salida);
+}
+
+.reintentar:active {
+  transform: scale(0.97);
+}
+
+.reintentar:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .esqueleto {
+    animation: latido 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes latido {
+  50% {
+    opacity: 0.55;
+  }
+}

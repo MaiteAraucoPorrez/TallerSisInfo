@@ -9,7 +9,8 @@ export type Notificacion = {
     | "COMUNIDAD_CERRADA"
     | "SANCION_ADVERTENCIA"
     | "CONEXION_SOLICITADA"
-    | "CONEXION_ACEPTADA";
+    | "CONEXION_ACEPTADA"
+    | "REPORTE_RESUELTO";
   mensaje: string;
   fecha: string | null;
   horaInicio: string | null;
@@ -18,6 +19,8 @@ export type Notificacion = {
   leida: boolean;
   creadaEn: string;
   comunidadId?: number | null;
+  /** HU27: en REPORTE_RESUELTO, el reporte revisado (la campanita lleva a «Mis reportes»). */
+  reporteId?: number | null;
 };
 
 export type ConfiguracionNotificaciones = { notificacionesActivas: boolean };
