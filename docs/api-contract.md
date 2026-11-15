@@ -501,8 +501,8 @@ Requiere JWT con rol **`ADMIN`** (claim `role`). Con otro rol responde `403`. El
 | `DELETE` | `/api/admin/lugares/{id}` | Elimina un lugar **que nunca se usó**. **`204`**; `404`; `409 EN_USO` si ya aparece en recomendaciones, reportes o comunidades (hay que desactivarlo). Queda `DELETE` en `historial_cambio` |
 | `PUT` | `/api/admin/lugares/{id}/foto` | Sube o reemplaza la **foto real** del lugar: `multipart/form-data` con el archivo en `foto`, JPG, PNG o WebP de hasta **2 MB** (el panel la achica antes). El tipo se revisa por el contenido, no por la extensión. **`200`** `{ "fotoUrl": "/api/lugares/21/foto?v=…" }`; `400 VALIDACION`; `404 NO_ENCONTRADO`. Queda `UPDATE` `{"foto": …}` en `historial_cambio` (sin los bytes) |
 | `DELETE` | `/api/admin/lugares/{id}/foto` | Quita la foto; vuelve la ilustración de la categoría. **`204`** (también si no tenía); `404 NO_ENCONTRADO` |
-| `GET` | `/api/admin/reportes` | Reportes de estudiantes (hasta 100, primero `PENDIENTE`). Los que no son de un lugar ni de una comunidad se ven con objeto «General» |
-| `PATCH` | `/api/admin/reportes/{id}` | Body `{ "estado": "RESUELTO" }` o `"DESCARTADO"`. Cierra un reporte `PENDIENTE` y guarda al admin como `revisor_id` y la fecha en `revisado_en`. **204**; 400 `VALIDACION` (otra decisión, incluida `PENDIENTE`: no se reabre); 404 `NO_ENCONTRADO`; 409 `YA_REVISADO` (ya tenía decisión: no se cambia) |
+| `GET` | `/api/admin/reportes` | Reportes de estudiantes (hasta 100, primero `PENDIENTE`). Cada uno dice a qué apunta: `objetoTipo` (`LUGAR`, `COMUNIDAD` o `EVENTO`; `null` en los generales), `objetoId` y `objeto` (nombre; «General» si no apunta a nada). Los revisados traen `respuesta` y `revisadoEn` (HU27) |
+| `PATCH` | `/api/admin/reportes/{id}` | Body `{ "estado": "RESUELTO", "respuesta": "…" }` (o `"DESCARTADO"`; `respuesta` opcional, hasta 500 caracteres). Cierra un reporte `PENDIENTE`, guarda al admin como `revisor_id`, la fecha en `revisado_en` y la respuesta, y crea el aviso `REPORTE_RESUELTO` para quien lo envió, **todo en la misma transacción**. **204**; 400 `VALIDACION` (otra decisión, incluida `PENDIENTE`, o respuesta de más de 500); 404 `NO_ENCONTRADO`; 409 `YA_REVISADO` (ya tenía decisión: no se cambia); 500 `ERROR_INESPERADO` con código de seguimiento (no se guarda nada) |
 | `GET` | `/api/admin/auditoria-rag?limite=50` | Últimas **conversaciones** con el asistente (1 a 200): los turnos de una misma conversación (crear una actividad: «jugar cartas» → «¿A qué hora?» → «5») vienen juntos, con `entrada` (el primero), `respuestas` (los siguientes) y `turnos`. Estado, modelo y latencia sumada. Un rechazo de seguridad en cualquier turno marca toda la conversación |
 | `GET` | `/api/admin/metricas` | Últimos 7 días: consultas por resultado, latencia promedio, los 5 lugares más recomendados y `rendimiento` de las recomendaciones (P50, P95, % por debajo de 3,5 s y respuestas del plan B, HU19) |
 
@@ -549,22 +549,27 @@ Requiere JWT. Perfil → Seguridad.
 
 `GET /api/perfil` trae además `tieneContrasena` (false si entra solo con Google) y `conGoogle` (si la cuenta está enlazada).
 
-## 6c. Reportes de los estudiantes
+## 6c. Reportes de los estudiantes (HU27 — responsable: Maite)
 
-Perfil → Ajustes → «Cuéntanos qué pasó». Requiere JWT. Los reportes quedan `PENDIENTE` y los revisa un administrador
-(`GET /api/admin/reportes` y `PATCH /api/admin/reportes/{id}`).
+Perfil → «Cuéntanos qué pasó», y el botón «Reportar» de una comunidad o un evento. Requiere JWT. Los reportes quedan
+`PENDIENTE` y los revisa un administrador (`GET /api/admin/reportes` y `PATCH /api/admin/reportes/{id}`); el estudiante los
+sigue en «Mis reportes» (`GET /api/reportes/mios`), con la respuesta del admin, y recibe un aviso en la campanita.
 
 | Regla | Valor | Estado |
 |---|---|---|
-| Motivos | `ERROR_APP` (algo no funciona), `SUGERENCIA` y `LUGAR_INCORRECTO` (información incorrecta de un lugar). La base admite además `COMUNIDAD_INAPROPIADA` para más adelante | ✅ Definido |
-| Objeto | `LUGAR_INCORRECTO` lleva `lugarId`; los otros dos van sin lugar (en el panel se ven como «General»). Lo exige también la base (`ck_rep_objeto`) | ✅ Definido |
+| Motivos | `ERROR_APP` (algo no funciona), `SUGERENCIA`, `LUGAR_INCORRECTO` (información incorrecta de un lugar), `COMUNIDAD_INAPROPIADA` y `EVENTO_INAPROPIADO` (confirmado) | ✅ Definido |
+| Objeto | Cada motivo lleva solo su objeto: `LUGAR_INCORRECTO` con `lugarId`, `COMUNIDAD_INAPROPIADA` con `comunidadId`, `EVENTO_INAPROPIADO` con `eventoId`; `ERROR_APP` y `SUGERENCIA`, ninguno (en el panel, «General»). Un objeto que no corresponde → `400 VALIDACION`. El objeto tiene que existir (`404`). Lo exige también la base (`ck_rep_objeto`) | ✅ Definido |
 | Descripción | De 10 a 500 caracteres (`ck_rep_descripcion`) | ✅ Definido |
-| Sin abusos | Un mismo lugar no se reporta otra vez mientras siga pendiente; como mucho 3 reportes pendientes por estudiante | ✅ Definido |
+| Sin abusos | Un mismo lugar, comunidad o evento no se reporta otra vez mientras siga pendiente (`409 YA_REPORTADO`); como mucho **5** reportes pendientes por estudiante (`409 DEMASIADOS_PENDIENTES`; antes eran 3) | ✅ Definido |
+| Respuesta del admin | Opcional al resolver o descartar, hasta 500 caracteres (`ck_rep_respuesta`). Completa en «Mis reportes»; recortada en el aviso | ✅ Definido |
+| Aviso | `REPORTE_RESUELTO` con `reporteId` en `GET /api/notificaciones`: «Tu reporte «Sugerencia» fue resuelto. Respuesta: «…»», hasta 200 caracteres. Se crea en la misma transacción que la decisión y se avisa en vivo (HU18) | ✅ Definido |
+| Errores inesperados | `500 ERROR_INESPERADO` con «Código de seguimiento: …» (la traza queda en el log del servidor) | ✅ Definido |
 
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `GET` | `/api/reportes/lugares` | Lugares activos por nombre, para elegir cuál reportar |
-| `POST` | `/api/reportes` | `{ "motivo": "LUGAR_INCORRECTO", "lugarId": 4, "descripcion": "…" }` → **`201`** `{ "id": 12, "estado": "PENDIENTE" }`; `400 VALIDACION`; `404 NO_ENCONTRADO` (lugar); `409 YA_REPORTADO` o `DEMASIADOS_PENDIENTES` |
+| `POST` | `/api/reportes` | `{ "motivo": "EVENTO_INAPROPIADO", "eventoId": 8, "descripcion": "…" }` (o `lugarId`/`comunidadId` según el motivo) → **`201`** `{ "id": 12, "estado": "PENDIENTE" }`; `400 VALIDACION`; `404 NO_ENCONTRADO` (lugar, comunidad o evento); `409 YA_REPORTADO` o `DEMASIADOS_PENDIENTES` |
+| `GET` | `/api/reportes/mios` | Solo los del token, primero los pendientes (hasta 100): `[{ "id", "motivo", "objetoTipo", "objetoId", "objeto", "descripcion", "estado", "creadoEn", "revisadoEn", "respuesta" }]`. Un `PENDIENTE` viene con `respuesta` y `revisadoEn` en `null` |
 
 ## 7. Lugares viables (HU6 — responsable: Ariana)
 
