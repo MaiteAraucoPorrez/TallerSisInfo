@@ -6,7 +6,7 @@ namespace Breaku.Domain.Rules;
 /// compartido); después pesan los gustos, el estilo de vida (salir o no, cómo estudia) y la forma de conectar. Por eso el
 /// test pregunta por eso y no por un perfil psicológico largo. Valores y creencias son opcionales.
 /// </summary>
-public static class ReglasAfinidad
+public static partial class ReglasAfinidad
 {
     /// <summary>Si cambian las preguntas, se sube la versión y los tests viejos dejan de contar hasta que se repitan.</summary>
     public const int Version = 1;

@@ -31,22 +31,37 @@ public static class ReglasRendimiento
         "Otra opción cercana que entra en tu tiempo libre."
     ];
 
-    public sealed record Candidato(int LugarId, int TiempoTrasladoMin, int DistanciaM, int DuracionEstimadaMin);
+    /// <summary>HU30: cuando el orden sale de lo que le gustó antes al estudiante (no de la cercanía).</summary>
+    private static readonly string[] ExplicacionesPersonalizadas =
+    [
+        "Va con el tipo de lugares que más te gustan y entra en tu tiempo libre.",
+        "También encaja con lo que sueles elegir y alcanzas a ir y volver dentro de tu puente.",
+        "Otra opción que entra en tu tiempo libre."
+    ];
+
+    /// <param name="Afinidad">HU30: el puntaje de <c>ReglasAfinidad.Puntaje</c>; 0 si no hay personalización.</param>
+    public sealed record Candidato(int LugarId, int TiempoTrasladoMin, int DistanciaM, int DuracionEstimadaMin, int Afinidad = 0);
 
     /// <summary>
-    /// El plan B: primero los que entran con ida, actividad y vuelta en el puente; después, los más cercanos (por
-    /// minutos de traslado y luego por metros). Sin cifras en la explicación, igual que la de la IA (la app ya las muestra).
+    /// El plan B: primero los que entran con ida, actividad y vuelta en el puente; después (HU30) los más afines al
+    /// estudiante, y luego los más cercanos (por minutos de traslado y luego por metros). Sin personalización la afinidad
+    /// es 0 para todos y el orden es el de siempre. Sin cifras en la explicación, igual que la de la IA.
     /// </summary>
-    public static List<(int LugarId, string Explicacion)> Respaldo(IEnumerable<Candidato> candidatos, int minutosDisponibles)
-        => candidatos
+    public static List<(int LugarId, string Explicacion)> Respaldo(IEnumerable<Candidato> candidatos, int minutosDisponibles,
+        bool personalizado = false)
+    {
+        var textos = personalizado ? ExplicacionesPersonalizadas : Explicaciones;
+        return candidatos
             .DistinctBy(c => c.LugarId)
             .OrderBy(c => EntraEnElPuente(c, minutosDisponibles) ? 0 : 1)
+            .ThenByDescending(c => c.Afinidad)
             .ThenBy(c => c.TiempoTrasladoMin)
             .ThenBy(c => c.DistanciaM)
             .ThenBy(c => c.LugarId)
             .Take(ReglasRecomendacion.MaximoRecomendaciones)
-            .Select((c, i) => (c.LugarId, Explicaciones[i]))
+            .Select((c, i) => (c.LugarId, textos[i]))
             .ToList();
+    }
 
     public static bool EntraEnElPuente(Candidato c, int minutosDisponibles)
         => c.TiempoTrasladoMin * 2 + c.DuracionEstimadaMin <= minutosDisponibles;
