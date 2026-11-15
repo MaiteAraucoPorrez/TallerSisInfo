@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AvisoFlotante, useAviso } from "@/components/app/Aviso";
 import EliminarCuenta from "@/components/app/EliminarCuenta";
 import FondoVivo from "@/components/app/FondoVivo";
+import MisReportes from "@/components/app/MisReportes";
 import {
   IconoAjustes,
   IconoBandera,
@@ -14,6 +15,7 @@ import {
   IconoCandado,
   IconoCheck,
   IconoPersona,
+  IconoReloj,
   IconoSalir,
 } from "@/components/app/Iconos";
 import { Entrada, Pieza, RESORTE_TOQUE, SALIDA } from "@/components/app/Movimiento";
@@ -24,6 +26,7 @@ import {
   LARGO_MAXIMO_REPORTE,
   LARGO_MINIMO_REPORTE,
   LugarReportable,
+  MAXIMO_PENDIENTES,
   MotivoReporte,
   enviarReporte,
   listarLugaresReportables,
@@ -43,7 +46,7 @@ import { iniciales } from "@/lib/iniciales";
 import { useSesion } from "@/lib/useSesion";
 import estilos from "./perfil.module.css";
 
-type Pestana = "informacion" | "ajustes" | "seguridad" | "reportar";
+type Pestana = "informacion" | "ajustes" | "seguridad" | "reportar" | "mis-reportes";
 
 const TIPOS_REPORTE = [
   { valor: "ERROR_APP", etiqueta: "Algo no funciona" },
@@ -56,14 +59,36 @@ const PESTANAS: { id: Pestana; nombre: string; corto: string; Icono: typeof Icon
   { id: "ajustes", nombre: "Ajustes", corto: "Ajustes", Icono: IconoAjustes },
   { id: "seguridad", nombre: "Seguridad", corto: "Seguridad", Icono: IconoCandado },
   { id: "reportar", nombre: "Reportar", corto: "Reportar", Icono: IconoBandera },
+  // HU27: el seguimiento de lo que reportó, con la respuesta del admin. La campanita lleva aquí (?pestana=mis-reportes).
+  { id: "mis-reportes", nombre: "Mis reportes", corto: "Historial", Icono: IconoReloj },
 ];
 
-export default function Perfil() {
+const esPestana = (valor: string | null): valor is Pestana => PESTANAS.some((p) => p.id === valor);
+
+/** useSearchParams necesita un Suspense alrededor para que la página se pueda prerenderizar. */
+export default function PaginaPerfil() {
+  return (
+    <Suspense fallback={null}>
+      <Perfil />
+    </Suspense>
+  );
+}
+
+function Perfil() {
   const router = useRouter();
+  const parametros = useSearchParams();
+  const pestanaPedida = parametros.get("pestana");
+  const reporteDestacado = Number(parametros.get("reporte")) || null;
   const { sesion } = useSesion();
   const aviso = useAviso();
   const reducir = useReducedMotion();
-  const [pestana, setPestana] = useState<Pestana>("informacion");
+  const [pestana, setPestana] = useState<Pestana>(esPestana(pestanaPedida) ? pestanaPedida : "informacion");
+  const [pestanaDeUrl, setPestanaDeUrl] = useState(pestanaPedida);
+  // Si la campanita abre «Mis reportes» con el perfil ya abierto, cambia de pestaña igual.
+  if (pestanaPedida !== pestanaDeUrl) {
+    setPestanaDeUrl(pestanaPedida);
+    if (esPestana(pestanaPedida)) setPestana(pestanaPedida);
+  }
   const [perfil, setPerfil] = useState<DatosPerfil | null>(null);
   const [errorPerfil, setErrorPerfil] = useState("");
   const [contrasenaActual, setContrasenaActual] = useState("");
@@ -547,10 +572,10 @@ export default function Perfil() {
                   setErrorReporte("");
                   setEnviandoReporte(true);
                   try {
-                    await enviarReporte(tipoReporte, limpio, conLugar ? Number(lugarReporte) : null);
+                    await enviarReporte(tipoReporte, limpio, { lugarId: conLugar ? Number(lugarReporte) : null });
                     setTextoReporte("");
                     setLugarReporte("");
-                    aviso.mostrar("¡Gracias! Lo vamos a revisar.");
+                    aviso.mostrar("¡Gracias! Puedes seguirlo en Mis reportes.");
                   } catch (err) {
                     setErrorReporte((err as Error).message);
                   } finally {
@@ -629,7 +654,18 @@ export default function Perfil() {
                 <button type="submit" className={estilos.primario} disabled={enviandoReporte}>
                   {enviandoReporte ? "Enviando…" : "Enviar reporte"}
                 </button>
+                <p className={estilos.notaReporte}>
+                  Puedes tener hasta {MAXIMO_PENDIENTES} reportes en revisión. Sigue su estado y la respuesta del equipo en{" "}
+                  <button type="button" className={estilos.enlaceTexto} onClick={() => setPestana("mis-reportes")}>
+                    Mis reportes
+                  </button>
+                  .
+                </p>
               </form>
+            )}
+
+            {pestana === "mis-reportes" && (
+              <MisReportes destacado={reporteDestacado} onReportar={() => setPestana("reportar")} />
             )}
           </motion.section>
         </AnimatePresence>
