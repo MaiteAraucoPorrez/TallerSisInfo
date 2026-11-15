@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import EliminarLugar from "@/components/admin/EliminarLugar";
 import FormularioSancion from "@/components/admin/FormularioSancion";
+import RevisarReporte from "@/components/admin/RevisarReporte";
 import Usuarios from "@/components/admin/Usuarios";
 import FormularioLugar from "@/components/admin/FormularioLugar";
 import { AvisoFlotante, useAviso } from "@/components/app/Aviso";
@@ -26,6 +27,7 @@ import {
   listarLugaresAdmin,
   listarReportes,
   resolverReporte,
+  TIPO_OBJETO_REPORTE,
   obtenerMetricas,
   obtenerResumen,
 } from "@/lib/admin";
@@ -208,13 +210,22 @@ function PanelAdminContenido() {
     }
   }
 
-  async function revisar(reporte: ReporteAdmin, decision: "RESUELTO" | "DESCARTADO") {
+  async function revisar(reporte: ReporteAdmin, decision: "RESUELTO" | "DESCARTADO", respuesta = ""): Promise<boolean> {
     setResolviendoReporte(reporte.id);
     try {
-      await resolverReporte(reporte.id, decision);
-      setReportes((rs) => rs?.map((r) => (r.id === reporte.id ? { ...r, estado: decision } : r)) ?? null);
-      aviso.mostrar(`Reporte de ${reporte.objeto}: ${ESTADO_REPORTE[decision].etiqueta.toLowerCase()}.`);
+      await resolverReporte(reporte.id, decision, respuesta);
+      const limpia = respuesta.trim() || null;
+      setReportes(
+        (rs) =>
+          rs?.map((r) =>
+            r.id === reporte.id ? { ...r, estado: decision, respuesta: limpia, revisadoEn: new Date().toISOString() } : r,
+          ) ?? null,
+      );
+      aviso.mostrar(
+        `Reporte de ${reporte.objeto}: ${ESTADO_REPORTE[decision].etiqueta.toLowerCase()}. Le avisamos a ${reporte.autor}.`,
+      );
       void obtenerResumen().then(setResumen).catch(() => undefined);
+      return true;
     } catch (e) {
       aviso.mostrar((e as Error).message);
       if (e instanceof ErrorApi && e.codigo === "YA_REVISADO") {
@@ -224,6 +235,7 @@ function PanelAdminContenido() {
     } finally {
       setResolviendoReporte(null);
     }
+    return false;
   }
 
   const consultasFiltradas = (consultas ?? []).filter((c) =>
@@ -423,7 +435,10 @@ function PanelAdminContenido() {
                   {reportes.map((r) => (
                     <li key={r.id} className={estilos.reporte}>
                       <span className={`${estilos.estado} ${estilos[ESTADO_REPORTE[r.estado].clase]}`}>{ESTADO_REPORTE[r.estado].etiqueta}</span>
-                      <strong>{r.objeto}</strong>
+                      <strong className={estilos.objetoReporte}>
+                        {r.objetoTipo && <span className={estilos.tipoObjeto}>{TIPO_OBJETO_REPORTE[r.objetoTipo]}</span>}
+                        {r.objeto}
+                      </strong>
                       <p>
                         {MOTIVO_REPORTE[r.motivo] ?? r.motivo}
                         {r.descripcion ? ` · ${r.descripcion}` : ""}
@@ -450,27 +465,21 @@ function PanelAdminContenido() {
                           <small>No hay un usuario para sancionar: el objeto reportado ya no existe o lo creó un administrador.</small>
                         ) : null;
                       })()}
-                      {r.estado === "PENDIENTE" && (
-                        <span className={estilos.accionesLugar}>
-                          <button
-                            type="button"
-                            className={estilos.aprobar}
-                            disabled={resolviendoReporte === r.id}
-                            onClick={() => void revisar(r, "RESUELTO")}
-                            aria-label={`Marcar como resuelto el reporte de ${r.objeto}`}
-                          >
-                            Resolver
-                          </button>
-                          <button
-                            type="button"
-                            className={estilos.desactivar}
-                            disabled={resolviendoReporte === r.id}
-                            onClick={() => void revisar(r, "DESCARTADO")}
-                            aria-label={`Descartar el reporte de ${r.objeto}`}
-                          >
-                            Descartar
-                          </button>
-                        </span>
+                      {r.estado === "PENDIENTE" ? (
+                        <RevisarReporte
+                          objeto={r.objeto}
+                          ocupado={resolviendoReporte === r.id}
+                          onRevisar={(decision, respuesta) => revisar(r, decision, respuesta)}
+                          claseResolver={estilos.aprobar}
+                          claseDescartar={estilos.desactivar}
+                        />
+                      ) : (
+                        r.respuesta && (
+                          <div className={estilos.respuestaReporte}>
+                            <span>Tu respuesta</span>
+                            <p>{r.respuesta}</p>
+                          </div>
+                        )
                       )}
                     </li>
                   ))}
@@ -481,7 +490,7 @@ function PanelAdminContenido() {
                     <IconoBandera tamano={24} />
                   </span>
                   <strong>{reportes ? "Sin reportes por ahora" : "Cargando reportes…"}</strong>
-                  <span>Cuando un estudiante reporte un lugar o una comunidad, aparecerá aquí.</span>
+                  <span>Cuando un estudiante reporte un lugar, una comunidad o un evento, aparecerá aquí.</span>
                 </div>
               ))}
 

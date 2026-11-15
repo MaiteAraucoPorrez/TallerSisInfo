@@ -1,0 +1,96 @@
+.contenedor {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.campo {
+  display: grid;
+  gap: 7px;
+  color: var(--ucb-marino);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.campo em {
+  color: var(--texto-tenue);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.campo textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  resize: vertical;
+  transition:
+    border-color 200ms ease,
+    box-shadow 250ms var(--curva-salida);
+}
+
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--ucb-celeste);
+  box-shadow: 0 0 0 4px rgba(47, 127, 209, 0.16);
+}
+
+.campo textarea[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pie small {
+  color: var(--texto-tenue);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.contador,
+.limite {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pie .limite {
+  color: var(--error);
+  font-weight: 700;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.responder {
+  min-height: 38px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--ucb-azul-medio);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.responder:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
