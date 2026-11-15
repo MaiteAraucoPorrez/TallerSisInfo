@@ -1,0 +1,152 @@
+/* HU24-FE: reutiliza el estilo del diálogo de FotoHorario y añade pestañas, comparación y avisos. */
+.fondo { composes: fondo from "../horario/FotoHorario.module.css"; }
+.modal { composes: modal from "../horario/FotoHorario.module.css"; max-width: 920px; }
+.cabecera { composes: cabecera from "../horario/FotoHorario.module.css"; }
+.icono { composes: icono from "../horario/FotoHorario.module.css"; }
+.cerrar { composes: cerrar from "../horario/FotoHorario.module.css"; }
+.error { composes: error from "../horario/FotoHorario.module.css"; }
+.cuerpo { composes: cuerpo from "../horario/FotoHorario.module.css"; }
+.zona { composes: zona from "../horario/FotoHorario.module.css"; }
+.zonaActiva { composes: zonaActiva from "../horario/FotoHorario.module.css"; }
+.vacio { composes: vacio from "../horario/FotoHorario.module.css"; }
+.vacioIcono { composes: vacioIcono from "../horario/FotoHorario.module.css"; font-weight: 800; }
+.vista { composes: vista from "../horario/FotoHorario.module.css"; }
+.escaneo { composes: escaneo from "../horario/FotoHorario.module.css"; }
+.velo { composes: velo from "../horario/FotoHorario.module.css"; }
+.leyendo { composes: leyendo from "../horario/FotoHorario.module.css"; }
+.acciones { composes: acciones from "../horario/FotoHorario.module.css"; align-items: center; }
+.primario { composes: primario from "../horario/FotoHorario.module.css"; }
+.secundario { composes: secundario from "../horario/FotoHorario.module.css"; }
+
+.manual {
+  margin-right: auto;
+  min-height: 48px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--ucb-azul-medio);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pestanas {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--fondo-suave);
+}
+
+.pestana {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto-suave);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pestanaActiva {
+  background: var(--superficie);
+  color: var(--ucb-marino);
+  box-shadow: var(--sombra-1);
+}
+
+.pestana:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.campoTexto {
+  display: grid;
+  gap: 6px;
+  color: var(--ucb-marino);
+  font-weight: 800;
+}
+
+.campoTexto textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.campoTexto textarea:focus {
+  outline: none;
+  border-color: var(--ucb-celeste);
+  box-shadow: 0 0 0 3px rgba(47, 127, 209, 0.16);
+}
+
+.campoTexto small { justify-self: end; color: var(--texto-suave); font-weight: 400; }
+
+.aviso {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff7d6;
+  border: 1px solid var(--ucb-amarillo);
+  color: var(--ucb-marino);
+  line-height: 1.45;
+}
+
+.aviso ul { margin: 6px 0 0; padding-left: 20px; }
+
+.comparar {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 720px) {
+  .comparar { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; }
+}
+
+.original {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #0b1f33;
+}
+
+.original img { display: block; width: 100%; max-height: 52vh; object-fit: contain; }
+
+.textoOriginal {
+  margin: 0;
+  padding: 14px;
+  max-height: 52vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  color: #ffffff;
+}
+
+.resumenDatos { display: grid; gap: 8px; margin: 0; }
+
+.dato {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--fondo-suave);
+}
+
+.dato dt { color: var(--texto-suave); font-size: 0.82rem; font-weight: 800; }
+.dato dd { margin: 2px 0 0; color: var(--texto); overflow-wrap: anywhere; }
+.dato small { color: var(--texto-suave); }
+
+.falta {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--error-fondo);
+  border: 1px solid var(--error-borde);
+  color: var(--error-texto);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.ayuda { margin: 0; color: var(--texto-suave); font-size: 0.9rem; }
