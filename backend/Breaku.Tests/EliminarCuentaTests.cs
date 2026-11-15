@@ -129,6 +129,7 @@ public class EliminarCuentaServiceTests
             => Anotar("ListarComunidades").ContinueWith(_ => comunidades, ct);
         public Task CambiarCreadorAsync(int comunidadId, int nuevoCreadorId, DateTime ahoraUtc, CancellationToken ct = default) => Anotar($"CambiarCreador:{comunidadId}->{nuevoCreadorId}");
         public Task EliminarComunidadAsync(int comunidadId, CancellationToken ct = default) => Anotar($"EliminarComunidad:{comunidadId}");
+        public Task EliminarConexionesAsync(int usuarioId, CancellationToken ct = default) => Anotar("Conexiones");
         public async Task<List<(int ComunidadId, int Confirmados)>> EliminarParticipacionesAsync(int usuarioId, CancellationToken ct = default)
         {
             await Anotar("Participaciones");
