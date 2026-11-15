@@ -1159,8 +1159,42 @@ Todo texto que llega al asistente o sale de él pasa por los guardrails (`Reglas
 | Plan B | Si la IA no contesta en ese tiempo o falla, se recomiendan hasta 3 lugares de los ya recuperados (HU6): primero los que entran con ida, actividad y vuelta en el puente, después los más cercanos. Responde `200` `OK` con `mensaje` = «El asistente estaba muy solicitado, así que te mostramos las opciones más cercanas para tu puente.» (con la IA, `mensaje` es `null`). Queda en la auditoría como `OK` con `modelo` = `respaldo-sin-ia` | ✅ Definido |
 | `latencia_ms` | En las recomendaciones, el tiempo total que espera el estudiante (recuperar + IA), no solo la IA | ✅ Definido |
 | Razonamiento | Con OpenAI (`api.openai.com`) se manda `reasoning_effort: "none"`, como en la extracción (HU11) | ✅ Definido |
-| Límite en horas pico | 10 consultas por minuto por estudiante entre `POST /api/recomendaciones`, `/api/actividades/extraer`, `/api/actividades/revisar` y `/api/horario/foto` (cada una cuenta por separado; guardar el horario no tiene límite). Al pasarse: **429** `{ "codigo": "DEMASIADAS_SOLICITUDES", "mensaje": "Hiciste muchas consultas seguidas. Espera un minuto y vuelve a intentarlo." }` con `Retry-After` | ✅ Definido |
+| Límite en horas pico | 10 consultas por minuto por estudiante entre `POST /api/recomendaciones`, `/api/actividades/extraer`, `/api/actividades/revisar`, `/api/horario/foto` y `/api/eventos/extraer` (cada una cuenta por separado; guardar el horario no tiene límite). Al pasarse: **429** `{ "codigo": "DEMASIADAS_SOLICITUDES", "mensaje": "Hiciste muchas consultas seguidas. Espera un minuto y vuelve a intentarlo." }` con `Retry-After` | ✅ Definido |
 | Observabilidad | `/health/ready` (base en 2 s) y `/health/metrics` (Prometheus, en memoria) de Rocío y Ariana; `GET /api/admin/metricas` → `rendimiento` `{ consultas, objetivoMs, p50Ms, p95Ms, dentroDelObjetivoPct, respaldos }` desde la auditoría (no se pierde al reiniciar) | ✅ Definido |
+
+## 7i. Leer un afiche de evento (HU24 — BE #278)
+
+`POST /api/eventos/extraer` (JWT). `multipart/form-data` con **uno solo** de `archivo` (JPG, PNG o PDF, hasta 8 MB; PDF de hasta 2 páginas) o `texto` (hasta 4000 caracteres). Devuelve un **borrador**: no crea el evento (eso es `POST /api/eventos`, HU23). La firma real del archivo se valida en el servidor (no cuenta el `ContentType`). Un PDF se convierte a imágenes (PDFium, lado mayor 1600 px) y entra al mismo flujo de visión que la foto (`LLM_MODEL_IMAGEN`). Usa la política de límite de IA (10 por minuto por estudiante, compartido).
+
+```json
+{
+  "consultaId": 123,
+  "estado": "COMPLETO | INCOMPLETO | NO_ENTENDIDO",
+  "mensaje": null,
+  "evento": {
+    "titulo": "Feria de Ciencias", "descripcion": null,
+    "inicio": "2026-11-20T08:00", "fin": "2026-11-20T13:00",
+    "lugarTexto": "Patio central",
+    "asistencia": "LIBRE", "visitaMin": 15, "visitaMax": 30
+  },
+  "faltantes": ["fin"],
+  "advertencias": ["La imagen está borrosa"],
+  "imagen": { "tipoMime": "image/jpeg", "contenidoBase64": "...", "bytes": 482113 }
+}
+```
+
+| Campo | Regla |
+|---|---|
+| `inicio`, `fin` | Hora de Bolivia, sin zona (`yyyy-MM-ddTHH:mm`); HU23 los guarda en UTC. Sin año en el afiche se usa el año actual. Una fecha ya pasada se deja `null` y se marca en `faltantes` |
+| `faltantes` | De `titulo`, `inicio`, `fin`, `lugar`. Un dato ilegible, dudoso o con manipulación queda `null`: nunca se inventa |
+| `asistencia` | `FIJA` o `LIBRE`. Sugiere el modelo; si no, respaldo: duración ≥ 3 h → `LIBRE`, si no `FIJA` |
+| `visitaMin`, `visitaMax` | Solo con `LIBRE` (minutos); por defecto 15–30, acotados a la duración. `null` con `FIJA` |
+| `lugarTexto` | Solo texto; el cruce con el catálogo lo hace HU23 |
+| `advertencias` | Textos cortos: imagen borrosa, cortada o ilegible, datos dudosos, o «el afiche tiene más de un evento» (se toma el principal) |
+| `estado` | `COMPLETO` (los 4 obligatorios, imagen legible), `INCOMPLETO` (faltan datos o la imagen no es legible: `mensaje` «La imagen se ve borrosa; revisa los datos o súbela con más calidad»), `NO_ENTENDIDO` (no es un evento: **200**, no 400) |
+| `imagen` | Solo si el origen es PDF: página 1 en JPEG y solo si cabe en 2 MB (se reintenta con menos resolución); si no, `null`. Con JPG/PNG siempre `null` |
+
+Errores `400`: `VALIDACION` (vacío, los dos campos, más de 8 MB), `ARCHIVO_NO_ADMITIDO` (firma que no es JPG/PNG/PDF), `PDF_MUCHAS_PAGINAS`, `PDF_PROTEGIDO` (con contraseña), `PDF_INVALIDO` (corrupto), `SOLICITUD_NO_PERMITIDA` (texto que intenta manipular al asistente). `401` sin sesión, `429` por límite, `503 LECTOR_NO_DISPONIBLE` (sin `LLM_API_KEY` o el modelo falla). Cada lectura queda en `log_auditoria_rag` con `tipo = EXTRACCION_EVENTO`; `datos_extraidos` guarda el borrador, los faltantes y las advertencias. La regla «el texto que cae en `ReglasSeguridadIa` pasa a PENDIENTE» es de HU23 al publicar.
 
 ## 8. Resumen de decisiones por responsable
 

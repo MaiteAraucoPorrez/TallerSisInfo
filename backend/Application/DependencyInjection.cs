@@ -2,6 +2,7 @@ using Breaku.Application.Actividades;
 using Breaku.Application.Admin;
 using Breaku.Application.Common.Interfaces;
 using Breaku.Application.Comunidades;
+using Breaku.Application.Eventos;
 using Breaku.Application.Horarios;
 using Breaku.Application.Lugares;
 using Breaku.Application.Matching;
@@ -14,6 +15,7 @@ using Breaku.Application.Sanciones;
 using Breaku.Application.TiempoReal;
 using Breaku.Application.Ubicacion;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Breaku.Application;
 
@@ -58,6 +60,12 @@ public static class DependencyInjection
         services.AddScoped<DescubrirComunidadesService>();
         services.AddScoped<AsistenciaService>();
         services.AddScoped<ICierreComunidadesService, CierreComunidadesService>();
+
+        // Eventos del campus: lectura de flyers (HU24)
+        services.AddScoped(sp => new ExtraccionEventoService(
+            sp.GetRequiredService<ILectorEventoFlyer>(), sp.GetRequiredService<IConvertidorPdf>(),
+            sp.GetRequiredService<IExtraccionRepository>(), TimeProvider.System,
+            sp.GetRequiredService<ILogger<ExtraccionEventoService>>()));
 
         // Sanciones y baja de usuarios (HU28); la purga la reutiliza HU29
         services.AddScoped(sp => new PurgaUsuarioService(sp.GetRequiredService<IPurgaRepository>(), sp.GetRequiredService<ITransaccion>(),

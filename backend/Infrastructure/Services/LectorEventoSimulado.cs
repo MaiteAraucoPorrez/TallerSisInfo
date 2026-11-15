@@ -1,0 +1,41 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
+using Breaku.Application.Eventos;
+using Breaku.Domain.Rules;
+
+namespace Breaku.Infrastructure.Services;
+
+/// <summary>
+/// Lector sin red para pruebas y desarrollo local (no se registra en la app). Del texto lee líneas «Título:», «Lugar:»,
+/// «Fecha: dd/MM/yyyy», «Hora: HH:mm-HH:mm». Una imagen no se interpreta: responde que no es un evento.
+/// </summary>
+public class LectorEventoSimulado : ILectorEventoFlyer
+{
+    public const string NombreModelo = "simulado";
+
+    public Task<LecturaEvento> LeerAsync(SolicitudLecturaEvento solicitud, CancellationToken ct = default)
+    {
+        var texto = solicitud.Texto ?? "";
+        string? Campo(string nombre) => Regex.Match(texto, $@"(?:^|\s){nombre}:\s*(.+?)(?=\s+(?:Título|Lugar|Fecha|Hora|Descripción):|$)",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)) is { Success: true } m ? m.Groups[1].Value.Trim() : null;
+
+        var titulo = Campo("Título");
+        string? inicio = null, fin = null;
+        var fecha = Campo("Fecha");
+        var hora = Campo("Hora");
+        if (fecha is not null && DateTime.TryParseExact(fecha, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dia))
+        {
+            var h = hora is null ? null : Regex.Match(hora, @"^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$");
+            if (h is { Success: true })
+            {
+                inicio = $"{dia:yyyy-MM-dd}T{TimeOnly.Parse(h.Groups[1].Value, CultureInfo.InvariantCulture):HH:mm}";
+                fin = $"{dia:yyyy-MM-dd}T{TimeOnly.Parse(h.Groups[2].Value, CultureInfo.InvariantCulture):HH:mm}";
+            }
+        }
+
+        var evento = titulo is null
+            ? new EventoLeido(false, true, null, null, null, null, null, null, null, null, false, [])
+            : new EventoLeido(true, true, titulo, Campo("Descripción"), inicio, fin, Campo("Lugar"), null, null, null, false, []);
+        return Task.FromResult(new LecturaEvento(NombreModelo, "{}", evento));
+    }
+}

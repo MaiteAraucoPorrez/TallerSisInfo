@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using MySqlConnector;
+using Breaku.Application.Eventos;
 using Breaku.Application.Horarios;
 using Breaku.Application.Puentes;
 using Breaku.Application.Notificaciones;
@@ -75,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<ISancionRepository, SancionRepository>();
         services.AddScoped<IPurgaRepository, PurgaRepository>();
         services.AddScoped<ITransaccion, TransaccionEf>();
+        services.AddSingleton<IConvertidorPdf, ConvertidorPdf>();
 
         return services;
     }
@@ -86,6 +88,7 @@ public static class DependencyInjection
         {
             services.AddScoped<IAsistenteIa, AsistenteIaSimulado>();
             services.AddScoped<ILectorHorarioFoto, LectorHorarioNoDisponible>();
+            services.AddScoped<ILectorEventoFlyer, LectorEventoNoDisponible>();
             services.AddScoped<IExtractorActividad, ExtractorActividadSimulado>();
             return;
         }
@@ -132,6 +135,10 @@ public static class DependencyInjection
             sp.GetRequiredService<IHttpClientFactory>().CreateClient(LectorHorarioLlm.NombreCliente),
             modeloImagen,
             sp.GetRequiredService<ILogger<LectorHorarioLlm>>()));
+        services.AddScoped<ILectorEventoFlyer>(sp => new LectorEventoLlm(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(LectorHorarioLlm.NombreCliente),
+            modeloImagen,
+            sp.GetRequiredService<ILogger<LectorEventoLlm>>()));
     }
 
     private static string Required(IConfiguration configuration, string key)
