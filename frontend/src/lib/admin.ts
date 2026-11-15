@@ -26,6 +26,8 @@ export type LugarAdmin = {
   /** De 1 a 5, a partir de los votos de los estudiantes; null si nadie votó. */
   puntuacion?: number | null;
   votos?: number;
+  /** HU30: los nombres de sus etiquetas de tipo de actividad. */
+  etiquetas?: string[];
 };
 
 export type ReporteAdmin = {
@@ -121,9 +123,25 @@ export type GuardarLugar = {
   horaApertura: string | null;
   horaCierre: string | null;
   minAPieDesdeBloqueA: number | null;
+  /** HU30: las etiquetas del catálogo. Al crear, al menos una; si no se manda al editar, se conservan. */
+  etiquetaIds?: number[];
 };
 
-export type LugarDetalleAdmin = GuardarLugar & { id: number; estado: EstadoLugar; validado: boolean; fotoUrl: string | null };
+/** HU30: una etiqueta del catálogo de tipos de actividad. */
+export type EtiquetaAdmin = { id: number; nombre: string };
+
+export type LugarDetalleAdmin = GuardarLugar & {
+  id: number;
+  estado: EstadoLugar;
+  validado: boolean;
+  fotoUrl: string | null;
+  etiquetas?: EtiquetaAdmin[];
+  recomendable?: boolean;
+};
+
+export const listarEtiquetasAdmin = () => pedirApi<EtiquetaAdmin[]>("/api/admin/etiquetas");
+export const crearEtiquetaAdmin = (nombre: string) =>
+  pedirApi<EtiquetaAdmin>("/api/admin/etiquetas", { method: "POST", body: JSON.stringify({ nombre }) });
 
 export const listarCategoriasAdmin = () => pedirApi<CategoriaAdmin[]>("/api/admin/categorias");
 export const listarCampusAdmin = () => pedirApi<CampusAdmin[]>("/api/admin/campus");

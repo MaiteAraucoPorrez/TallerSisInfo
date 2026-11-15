@@ -1,0 +1,156 @@
+.contenedor {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.titulo {
+  color: var(--ucb-marino);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.titulo em {
+  color: var(--texto-tenue);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.ayuda,
+.ayudaError {
+  margin: 0;
+  color: var(--texto-tenue);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.ayudaError {
+  color: var(--error);
+  font-weight: 700;
+}
+
+.pastillas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pastilla,
+.marcada,
+.agregar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--ucb-marino);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 160ms var(--curva-salida),
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+.marcada {
+  border-color: var(--ucb-marino);
+  background: var(--ucb-marino);
+  color: #ffffff;
+}
+
+.check {
+  display: inline-grid;
+  place-items: center;
+  color: var(--ucb-amarillo);
+}
+
+.agregar {
+  border-style: dashed;
+  color: var(--ucb-azul-medio);
+}
+
+.pastilla:active:not(:disabled),
+.marcada:active:not(:disabled),
+.agregar:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.pastilla:disabled,
+.marcada:disabled,
+.agregar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pastilla:focus-visible,
+.marcada:focus-visible,
+.agregar:focus-visible,
+.cancelar:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pastilla:hover:not(:disabled) {
+    border-color: var(--ucb-azul-medio);
+    background: var(--fondo-suave);
+  }
+  .agregar:hover:not(:disabled) {
+    background: var(--fondo-suave);
+  }
+}
+
+.nueva {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.nueva input {
+  flex: 1 1 180px;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.nueva input:focus {
+  outline: none;
+  border-color: var(--ucb-celeste);
+  box-shadow: 0 0 0 4px rgba(47, 127, 209, 0.16);
+}
+
+.nueva input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.cancelar {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--texto-tenue);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.errorNueva {
+  flex-basis: 100%;
+  color: var(--error);
+  font-size: 0.82rem;
+  font-weight: 700;
+}

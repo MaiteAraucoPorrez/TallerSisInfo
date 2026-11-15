@@ -33,6 +33,7 @@ import {
 } from "@/lib/admin";
 import { ErrorApi } from "@/lib/api";
 import { reporteDeUsuario, usuarioParaSancionar } from "@/lib/reglasUsuarios";
+import { MENSAJE_SIN_ETIQUETA, puedeActivarse } from "@/lib/reglasEtiquetas";
 import { useSesion } from "@/lib/useSesion";
 import { esAdmin } from "@/services/authService";
 import Puntuacion from "@/components/app/Puntuacion";
@@ -149,7 +150,8 @@ function PanelAdminContenido() {
   const [error, setError] = useState("");
   const [cambiando, setCambiando] = useState<number | null>(null);
   // Catálogo: formulario abierto (null = cerrado; { id: null } = lugar nuevo) y lugar a eliminar.
-  const [formulario, setFormulario] = useState<{ id: number | null } | null>(null);
+  // HU30: `activar` = se abrió desde «Aprobar»/«Activar» de un lugar sin tipo de actividad; al guardar, queda activo.
+  const [formulario, setFormulario] = useState<{ id: number | null; activar?: boolean } | null>(null);
   const [aEliminar, setAEliminar] = useState<LugarAdmin | null>(null);
 
   useEffect(() => {
@@ -175,6 +177,12 @@ function PanelAdminContenido() {
   }, [sesion, cargar]);
 
   async function cambiar(lugar: LugarAdmin, estado: EstadoLugar) {
+    // HU30: un lugar recomendable no se activa sin tipo de actividad. Se abre su formulario para elegirlo.
+    if (estado === "ACTIVO" && !puedeActivarse(lugar)) {
+      aviso.mostrar(`${lugar.nombre}: ${MENSAJE_SIN_ETIQUETA}`);
+      setFormulario({ id: lugar.id, activar: true });
+      return;
+    }
     setCambiando(lugar.id);
     try {
       await cambiarEstadoLugar(lugar.id, estado);
@@ -372,6 +380,8 @@ function PanelAdminContenido() {
                         {l.nombre}
                         {!l.validado && <span className={estilos.dato}>Por validar</span>}
                         {!l.recomendable && <span className={estilos.dato}>Solo referencia</span>}
+                        {l.recomendable && !(l.etiquetas?.length) && <span className={estilos.datoAlerta}>Sin tipo de actividad</span>}
+                        {(l.etiquetas?.length ?? 0) > 0 && <small className={estilos.etiquetasLugar}>{l.etiquetas!.join(" · ")}</small>}
                       </strong>
                       <span role="cell" data-etiqueta="Categoría">
                         {l.categoria}
@@ -693,7 +703,13 @@ function PanelAdminContenido() {
 
       <AnimatePresence>
         {formulario && (
-          <FormularioLugar key="formulario" lugarId={formulario.id} onCerrar={() => setFormulario(null)} onGuardado={catalogoCambio} />
+          <FormularioLugar
+            key="formulario"
+            lugarId={formulario.id}
+            activarAlGuardar={formulario.activar}
+            onCerrar={() => setFormulario(null)}
+            onGuardado={catalogoCambio}
+          />
         )}
         {aEliminar && (
           <EliminarLugar

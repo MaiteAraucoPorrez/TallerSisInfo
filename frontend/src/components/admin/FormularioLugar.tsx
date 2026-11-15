@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "motion/react";
 import { IconoPin } from "@/components/app/Iconos";
@@ -8,16 +8,21 @@ import { Selector, SelectorHora } from "@/components/app/Selectores";
 import {
   CampusAdmin,
   CategoriaAdmin,
+  EtiquetaAdmin,
   GuardarLugar,
+  cambiarEstadoLugar,
   crearLugarAdmin,
   editarLugarAdmin,
   listarCampusAdmin,
   listarCategoriasAdmin,
+  listarEtiquetasAdmin,
   obtenerLugarAdmin,
   quitarFotoLugarAdmin,
   subirFotoLugarAdmin,
 } from "@/lib/admin";
+import { errorEtiquetas, quedaActivoYRecomendable } from "@/lib/reglasEtiquetas";
 import CampoFoto, { CambioFoto } from "./CampoFoto";
+import SelectorEtiquetas from "./SelectorEtiquetas";
 import estilos from "./FormularioLugar.module.css";
 
 const LARGO_MAXIMO_DESCRIPCION = 500;
@@ -26,6 +31,8 @@ const sinSuscripcion = () => () => {};
 type Props = {
   /** Sin id: lugar nuevo. Con id: se cargan sus datos para editarlo. */
   lugarId: number | null;
+  /** HU30: se abrió para activar un lugar que no tenía tipo de actividad: las etiquetas son obligatorias y al guardar queda ACTIVO. */
+  activarAlGuardar?: boolean;
   onCerrar: () => void;
   /** Se guardó: el panel recarga el catálogo y muestra el aviso. */
   onGuardado: (mensaje: string) => void;
@@ -60,7 +67,7 @@ const VACIO: Campos = {
 const numero = (texto: string) => (texto.trim() === "" ? null : Number(texto.replace(",", ".")));
 
 /** Crear o editar un lugar del catálogo. Las reglas las valida el servidor; aquí solo se arma el pedido y se muestra su mensaje. */
-export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props) {
+export default function FormularioLugar({ lugarId, activarAlGuardar = false, onCerrar, onGuardado }: Props) {
   const reducir = useReducedMotion();
   const enCliente = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [campos, setCampos] = useState<Campos | null>(null);
@@ -70,16 +77,30 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
   const [guardando, setGuardando] = useState(false);
   const [fotoActual, setFotoActual] = useState<string | null>(null);
   const [cambioFoto, setCambioFoto] = useState<CambioFoto>({ tipo: "igual" });
+  // HU30: etiquetas de tipo de actividad del lugar y si tiene que tener al menos una.
+  const [catalogoEtiquetas, setCatalogoEtiquetas] = useState<EtiquetaAdmin[]>([]);
+  const [etiquetas, setEtiquetas] = useState<number[]>([]);
+  const [requiereEtiqueta, setRequiereEtiqueta] = useState(true);
+  const [errorEtiqueta, setErrorEtiqueta] = useState("");
+  const refEtiquetas = useRef<HTMLDivElement>(null);
   const editando = lugarId !== null;
 
   useEffect(() => {
     let activo = true;
-    Promise.all([listarCategoriasAdmin(), listarCampusAdmin(), editando ? obtenerLugarAdmin(lugarId) : Promise.resolve(null)])
-      .then(([cats, camps, lugar]) => {
+    Promise.all([
+      listarCategoriasAdmin(),
+      listarCampusAdmin(),
+      listarEtiquetasAdmin(),
+      editando ? obtenerLugarAdmin(lugarId) : Promise.resolve(null),
+    ])
+      .then(([cats, camps, etiqs, lugar]) => {
         if (!activo) return;
         setCategorias(cats);
         setCampus(camps);
+        setCatalogoEtiquetas(etiqs);
+        setRequiereEtiqueta(activarAlGuardar || quedaActivoYRecomendable(lugar));
         if (lugar) {
+          setEtiquetas((lugar.etiquetas ?? []).map((e) => e.id));
           setFotoActual(lugar.fotoUrl ?? null);
           setCampos({
             nombre: lugar.nombre,
@@ -103,7 +124,7 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
     return () => {
       activo = false;
     };
-  }, [editando, lugarId]);
+  }, [editando, lugarId, activarAlGuardar]);
 
   // Escape cierra (si no se está guardando).
   useEffect(() => {
@@ -122,6 +143,14 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
     if (!campos || guardando) return;
     if (!campos.nombre.trim()) return setError("Escribe el nombre del lugar.");
     if (!campos.categoriaId) return setError("Elige una categoría.");
+    const faltaEtiqueta = errorEtiquetas(etiquetas, requiereEtiqueta);
+    if (faltaEtiqueta) {
+      setErrorEtiqueta(faltaEtiqueta);
+      // El error se ve donde se corrige: el modal puede estar desplazado hasta abajo.
+      refEtiquetas.current?.scrollIntoView({ behavior: reducir ? "auto" : "smooth", block: "center" });
+      refEtiquetas.current?.querySelector("button")?.focus({ preventScroll: true });
+      return;
+    }
 
     const lugar: GuardarLugar = {
       nombre: campos.nombre.trim(),
@@ -133,6 +162,7 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
       horaApertura: campos.conHorario ? campos.apertura : null,
       horaCierre: campos.conHorario ? campos.cierre : null,
       minAPieDesdeBloqueA: numero(campos.minAPie),
+      etiquetaIds: etiquetas,
     };
     if (Number.isNaN(lugar.latitud) || Number.isNaN(lugar.longitud)) return setError("Indica la latitud y la longitud del lugar.");
 
@@ -141,7 +171,12 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
       let id = lugarId;
       if (editando) await editarLugarAdmin(lugarId, lugar);
       else id = (await crearLugarAdmin(lugar)).id;
-      const listo = editando ? `${lugar.nombre}: cambios guardados.` : `${lugar.nombre} ya está en el catálogo.`;
+      if (editando && activarAlGuardar) await cambiarEstadoLugar(lugarId, "ACTIVO");
+      const listo = editando
+        ? activarAlGuardar
+          ? `${lugar.nombre} ya está activo y se puede recomendar.`
+          : `${lugar.nombre}: cambios guardados.`
+        : `${lugar.nombre} ya está en el catálogo.`;
 
       // La foto va después: al crear, recién ahora existe el id. Si falla, el lugar ya quedó guardado y se avisa.
       try {
@@ -187,7 +222,7 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
           <span className="hz-modal-icono" aria-hidden="true">
             <IconoPin tamano={22} />
           </span>
-          <h2 id="titulo-lugar">{editando ? "Editar lugar" : "Nuevo lugar"}</h2>
+          <h2 id="titulo-lugar">{activarAlGuardar ? "Elige su tipo de actividad para activarlo" : editando ? "Editar lugar" : "Nuevo lugar"}</h2>
         </div>
 
         {error && (
@@ -213,6 +248,26 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
                 onCambio={(v) => cambiar("categoriaId", v)}
                 etiqueta="Categoría"
               />
+            </div>
+
+            <div ref={refEtiquetas}>
+            <SelectorEtiquetas
+              catalogo={catalogoEtiquetas}
+              seleccion={etiquetas}
+              requerido={requiereEtiqueta}
+              error={errorEtiqueta}
+              deshabilitado={guardando}
+              onCambio={(s) => {
+                setEtiquetas(s);
+                if (errorEtiqueta) setErrorEtiqueta("");
+                if (error) setError("");
+              }}
+              onNueva={(nueva) => {
+                setCatalogoEtiquetas((c) => [...c, nueva].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")));
+                setEtiquetas((s) => [...s, nueva.id].sort((a, b) => a - b));
+                if (errorEtiqueta) setErrorEtiqueta("");
+              }}
+            />
             </div>
 
             <label className="hz-campo">
@@ -308,7 +363,7 @@ export default function FormularioLugar({ lugarId, onCerrar, onGuardado }: Props
             Cancelar
           </button>
           <button type="submit" className="hz-btn hz-btn-primary" disabled={guardando || !campos}>
-            {guardando ? "Guardando…" : editando ? "Guardar cambios" : "Crear lugar"}
+            {guardando ? "Guardando…" : activarAlGuardar ? "Guardar y activar" : editando ? "Guardar cambios" : "Crear lugar"}
           </button>
         </div>
       </motion.form>

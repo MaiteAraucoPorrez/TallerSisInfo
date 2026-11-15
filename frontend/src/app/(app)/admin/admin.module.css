@@ -715,6 +715,28 @@
   .fila:not(.encabezado):hover { background: #f4f8fc; }
 }
 
+/* HU30: las etiquetas de tipo de actividad bajo el nombre, y el aviso de los recomendables que no tienen ninguna. */
+.etiquetasLugar {
+  display: block;
+  margin-top: 3px;
+  color: var(--texto-tenue);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.datoAlerta {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--error-fondo);
+  color: var(--error);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .dato {
   display: inline-block;
   margin-left: 8px;
