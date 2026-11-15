@@ -242,7 +242,12 @@ public class AdminRepository : IAdminRepository
         var filas = await _db.Database.SqlQuery<FilaReporte>($"""
                 SELECT r.id AS Id, r.motivo AS Motivo, r.descripcion AS Descripcion, r.estado AS Estado,
                        COALESCE(l.nombre, c.actividad, e.titulo, 'General') AS Objeto, u.nombre AS Autor, r.created_at AS CreadoEn,
-                       rep.id AS UsuarioReportadoId, rep.nombre AS UsuarioReportadoNombre
+                       rep.id AS UsuarioReportadoId, rep.nombre AS UsuarioReportadoNombre,
+                       CASE WHEN r.lugar_id IS NOT NULL THEN 'LUGAR'
+                            WHEN r.comunidad_id IS NOT NULL THEN 'COMUNIDAD'
+                            WHEN r.evento_id IS NOT NULL THEN 'EVENTO' END AS ObjetoTipo,
+                       COALESCE(r.lugar_id, r.comunidad_id, r.evento_id) AS ObjetoId,
+                       r.respuesta AS Respuesta, r.revisado_en AS RevisadoEn
                 FROM reporte r
                 JOIN usuario u ON u.id = r.usuario_id
                 LEFT JOIN lugar l ON l.id = r.lugar_id
@@ -253,24 +258,34 @@ public class AdminRepository : IAdminRepository
                 LIMIT 100
                 """).ToListAsync(ct);
         return filas.Select(f => new ReporteAdminDto(f.Id, f.Motivo, f.Descripcion, f.Estado, f.Objeto, f.Autor, f.CreadoEn,
-            f.UsuarioReportadoId, f.UsuarioReportadoNombre)).ToList();
+            f.UsuarioReportadoId, f.UsuarioReportadoNombre, f.ObjetoTipo, f.ObjetoId, f.Respuesta, f.RevisadoEn)).ToList();
     }
 
-    public async Task<string?> ResolverReporteAsync(int reporteId, string estado, int adminId, CancellationToken ct = default)
+    public async Task<RevisionReporte?> ResolverReporteAsync(int reporteId, string estado, string? respuesta, int adminId,
+        CancellationToken ct = default)
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
-        var anterior = (await _db.Database.SqlQuery<string>(
-            $"SELECT estado AS Value FROM reporte WHERE id = {reporteId} FOR UPDATE").ToListAsync(ct)).FirstOrDefault();
-        if (anterior is null) return null;
-        if (anterior != "PENDIENTE") return anterior;
+        var fila = (await _db.Database.SqlQuery<FilaRevision>($"""
+            SELECT estado AS Estado, usuario_id AS UsuarioId, motivo AS Motivo FROM reporte WHERE id = {reporteId} FOR UPDATE
+            """).ToListAsync(ct)).FirstOrDefault();
+        if (fila is null) return null;
+        if (fila.Estado != ReglasReporte.Pendiente) return new RevisionReporte(fila.Estado, fila.UsuarioId);
 
         await _db.Database.ExecuteSqlAsync($"""
             UPDATE reporte
-            SET estado = {estado}, revisor_id = {adminId}, revisado_en = UTC_TIMESTAMP(6)
+            SET estado = {estado}, revisor_id = {adminId}, revisado_en = UTC_TIMESTAMP(6), respuesta = {respuesta}
             WHERE id = {reporteId} AND estado = 'PENDIENTE'
             """, ct);
+
+        // HU27: el aviso para quien lo envió, en la misma transacción que la decisión (si falla uno, no queda ninguno).
+        var mensaje = ReglasReporte.MensajeAviso(fila.Motivo, estado, respuesta);
+        await _db.Database.ExecuteSqlAsync($"""
+            INSERT INTO notificacion (usuario_id, tipo, reporte_id, mensaje)
+            VALUES ({fila.UsuarioId}, 'REPORTE_RESUELTO', {reporteId}, {mensaje})
+            """, ct);
+
         await tx.CommitAsync(ct);
-        return anterior;
+        return new RevisionReporte(fila.Estado, fila.UsuarioId);
     }
 
     public async Task<List<TurnoConsultaRag>> ListarConsultasRagAsync(int limite, CancellationToken ct = default)
@@ -427,6 +442,17 @@ public class AdminRepository : IAdminRepository
         public DateTime CreadoEn { get; set; }
         public int? UsuarioReportadoId { get; set; }
         public string? UsuarioReportadoNombre { get; set; }
+        public string? ObjetoTipo { get; set; }
+        public int? ObjetoId { get; set; }
+        public string? Respuesta { get; set; }
+        public DateTime? RevisadoEn { get; set; }
+    }
+
+    private sealed class FilaRevision
+    {
+        public string Estado { get; set; } = "";
+        public int UsuarioId { get; set; }
+        public string Motivo { get; set; } = "";
     }
 
     private sealed class FilaConsultaRag

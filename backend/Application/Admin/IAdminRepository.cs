@@ -31,7 +31,11 @@ public interface IAdminRepository
     Task<bool> EliminarLugarAsync(int lugarId, int adminId, CancellationToken ct = default);
 
     Task<List<ReporteAdminDto>> ListarReportesAsync(CancellationToken ct = default);
-    Task<string?> ResolverReporteAsync(int reporteId, string estado, int adminId, CancellationToken ct = default);
+    /// <summary>
+    /// En una transacción: bloquea el reporte y, si está PENDIENTE, guarda la decisión, la respuesta y el revisor, y crea el
+    /// aviso REPORTE_RESUELTO para quien lo envió. Devuelve el estado anterior (y el autor), o <c>null</c> si no existe.
+    /// </summary>
+    Task<RevisionReporte?> ResolverReporteAsync(int reporteId, string estado, string? respuesta, int adminId, CancellationToken ct = default);
     /// <summary>Los turnos de las últimas <paramref name="limite"/> conversaciones con el asistente.</summary>
     Task<List<TurnoConsultaRag>> ListarConsultasRagAsync(int limite, CancellationToken ct = default);
     Task<MetricasAdminDto> MetricasAsync(CancellationToken ct = default);
