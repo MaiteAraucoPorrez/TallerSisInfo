@@ -490,14 +490,16 @@ Requiere JWT con rol **`ADMIN`** (claim `role`). Con otro rol responde `403`. El
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `GET` | `/api/admin/resumen` | Lugares activos y en revisión, estudiantes activos, comunidades de hoy, consultas al asistente de la semana y reportes pendientes |
-| `GET` | `/api/admin/lugares` | Catálogo completo (primero `EN_REVISION`) con cuántas veces se recomendó cada lugar |
-| `PATCH` | `/api/admin/lugares/{id}/estado` | Cambia el estado a `ACTIVO`, `EN_REVISION` o `INACTIVO`; queda en `historial_cambio`. `204`, `400 VALIDACION` o `404 NO_ENCONTRADO` |
+| `GET` | `/api/admin/lugares` | Catálogo completo (primero `EN_REVISION`) con cuántas veces se recomendó cada lugar y sus `etiquetas` (HU30) |
+| `PATCH` | `/api/admin/lugares/{id}/estado` | Cambia el estado a `ACTIVO`, `EN_REVISION` o `INACTIVO`; queda en `historial_cambio`. `204`, `400 VALIDACION` (también si se activa un lugar **recomendable sin ninguna etiqueta**, HU30) o `404 NO_ENCONTRADO` |
 | `PATCH` | `/api/admin/lugares/{id}/validacion` | Marca un lugar como validado (`{ "validado": true }`) o le quita la validación (`false`). Es independiente del estado: un lugar `ACTIVO` puede seguir «Por validar» hasta que el equipo revise sus datos. Queda en `historial_cambio`. `204`, `400 VALIDACION` o `404 NO_ENCONTRADO` |
 | `GET` | `/api/admin/categorias` | Categorías del catálogo (para el formulario de lugar) |
 | `GET` | `/api/admin/campus` | Campus activos con su centro (`latitud`, `longitud`) y su radio (`radioMaxM`): un lugar tiene que quedar dentro de alguno |
-| `GET` | `/api/admin/lugares/{id}` | Un lugar con todos sus datos editables. `200` o `404 NO_ENCONTRADO` |
-| `POST` | `/api/admin/lugares` | Crea un lugar (queda `ACTIVO` y validado). **`201`** `{ "id": … }`; `400 VALIDACION`; `409 NOMBRE_REPETIDO`. Queda `CREATE` en `historial_cambio` |
-| `PUT` | `/api/admin/lugares/{id}` | Edita un lugar con las mismas reglas. **`204`**; `400`; `404`; `409 NOMBRE_REPETIDO`. Queda `UPDATE` (antes y después) en `historial_cambio` |
+| `GET` | `/api/admin/etiquetas` | HU30: catálogo de etiquetas de tipo de actividad `[{ "id", "nombre" }]`, por nombre |
+| `POST` | `/api/admin/etiquetas` | HU30: `{ "nombre": "Voluntariado" }` → **`201`** `{ "id", "nombre" }`; `400 VALIDACION` (vacío o > 50); `409 NOMBRE_REPETIDO` (sin distinguir mayúsculas ni tildes). Solo `ADMIN` (403 para estudiantes) |
+| `GET` | `/api/admin/lugares/{id}` | Un lugar con todos sus datos editables, sus `etiquetas` (`[{ "id", "nombre" }]`) y si es `recomendable`. `200` o `404 NO_ENCONTRADO` |
+| `POST` | `/api/admin/lugares` | Crea un lugar (queda `ACTIVO` y validado). HU30: **`etiquetaIds` obligatorio, al menos una del catálogo**. **`201`** `{ "id": … }`; `400 VALIDACION`; `409 NOMBRE_REPETIDO`. Queda `CREATE` en `historial_cambio` |
+| `PUT` | `/api/admin/lugares/{id}` | Edita un lugar con las mismas reglas. HU30: `etiquetaIds` reemplaza sus etiquetas; si no viene, las conserva; un lugar activo y recomendable no puede quedar sin ninguna. **`204`**; `400`; `404`; `409 NOMBRE_REPETIDO`. Queda `UPDATE` (antes y después) en `historial_cambio` |
 | `DELETE` | `/api/admin/lugares/{id}` | Elimina un lugar **que nunca se usó**. **`204`**; `404`; `409 EN_USO` si ya aparece en recomendaciones, reportes o comunidades (hay que desactivarlo). Queda `DELETE` en `historial_cambio` |
 | `PUT` | `/api/admin/lugares/{id}/foto` | Sube o reemplaza la **foto real** del lugar: `multipart/form-data` con el archivo en `foto`, JPG, PNG o WebP de hasta **2 MB** (el panel la achica antes). El tipo se revisa por el contenido, no por la extensión. **`200`** `{ "fotoUrl": "/api/lugares/21/foto?v=…" }`; `400 VALIDACION`; `404 NO_ENCONTRADO`. Queda `UPDATE` `{"foto": …}` en `historial_cambio` (sin los bytes) |
 | `DELETE` | `/api/admin/lugares/{id}/foto` | Quita la foto; vuelve la ilustración de la categoría. **`204`** (también si no tenía); `404 NO_ENCONTRADO` |
@@ -780,6 +782,22 @@ completo y el correo de quien saludó, y le avisa con `CONEXION_ACEPTADA`. El av
 | Sin duplicados | Una sola valoración por recomendación: votar de nuevo reemplaza la anterior y actualiza `fecha_feedback`; repetir el mismo voto no escribe | ✅ Definido |
 | Para qué sirve | `GET /api/admin/metricas` muestra me gusta y no me sirve de la semana, en total y por lugar | ✅ Definido |
 | Puntuación del lugar | De 1 a 5 con un decimal: `1 + 4 × (me gusta + 1) / (votos + 2)` (`ReglasFeedback.Puntuacion`). El voto imaginario de cada lado evita que un solo voto dé 5,0 o 1,0. Sin votos → `null`. Va como `puntuacion` y `votos` en el catálogo del admin (`GET /api/admin/lugares`), en los lugares viables y en cada recomendación (que además trae `verificado` = `lugar.validado`) | ✅ Definido (Maite) |
+
+## 7d. Recomendaciones según mis likes (HU30 — responsable: Maite)
+
+| Regla | Valor | Estado |
+|---|---|---|
+| Qué personaliza | El orden de los candidatos de `POST /api/recomendaciones`, por usuario y por tipo de actividad (`lugar_etiqueta`), no un ranking global | ✅ Definido |
+| Pesos | Cada voto del propio estudiante suma a las etiquetas del lugar votado: `LIKE` +1, `DISLIKE` −2. Puntaje de un lugar = suma de los pesos de sus etiquetas (`ReglasAfinidad`) | ✅ Definido (valores de arranque) |
+| Mínimo | 3 feedbacks **totales** del estudiante. Con menos (o sin historial) todo queda como antes de HU30, incluso el «no me sirve» | ✅ Definido |
+| No repetir | Un lugar con `DISLIKE` de los últimos 30 días no vuelve a ser candidato | ✅ Definido |
+| Orden | Puntaje (mayor primero), luego distancia, nombre e id. Sin popularidad global. Se puntúa antes del recorte a 10: la afinidad decide qué llega al LLM. No se reordena la respuesta del LLM | ✅ Definido |
+| Filtros | Los de siempre (estado, radio, métricas completas, `CabeEnElPuente`): la afinidad solo reordena lo que ya cabe | ✅ Definido |
+| LLM | Con personalización, el prompt agrega `PREFERENCIAS_DEL_ESTUDIANTE` `{ "leGustan": [...], "prefiereEvitar": [...] }` (solo nombres de etiquetas, hasta 3 por lado) y cada lugar trae sus `etiquetas`. `FiltrarSoloRecuperados` sigue vigente. El resumen queda guardado dentro de `log_auditoria_rag.prompt_enviado` | ✅ Definido |
+| Plan B | `ReglasRendimiento.Respaldo` ordena por: entra en el puente, afinidad, traslado, distancia | ✅ Definido |
+| Lugares viables (HU6) | `GET /api/lugares/viables` **no** se personaliza: sigue mostrando todo lo que cabe, por distancia | ✅ Definido |
+| Errores | `500 ERROR_INESPERADO` con código de seguimiento | ✅ Definido |
+| Para el estudiante | Sin cambios en la respuesta ni pantallas nuevas en la v1 («Porque te gustó…» queda fuera) | ✅ Definido |
 
 ### `PATCH /api/recomendaciones/{id}/feedback`
 

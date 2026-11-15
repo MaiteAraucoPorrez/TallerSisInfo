@@ -15,11 +15,13 @@ public class BusquedaLugaresService : IRecuperadorLugares
 
     private readonly ILugarRepository _lugares;
     private readonly IPuenteRepository _puentes;
+    private readonly TimeProvider _reloj;
 
-    public BusquedaLugaresService(ILugarRepository lugares, IPuenteRepository puentes)
+    public BusquedaLugaresService(ILugarRepository lugares, IPuenteRepository puentes, TimeProvider? reloj = null)
     {
         _lugares = lugares;
         _puentes = puentes;
+        _reloj = reloj ?? TimeProvider.System;
     }
 
     public async Task<ResultadoBusquedaLugaresDto> BuscarParaPuenteAsync(int usuarioId, int puenteId, CancellationToken ct = default)
@@ -28,7 +30,10 @@ public class BusquedaLugaresService : IRecuperadorLugares
                      ?? throw new ReglaNegocioException("NO_ENCONTRADO", "El puente no existe.");
         var disponible = MinutosDelPuente(puente);
 
-        var (zona, candidatos) = await BuscarAsync(usuarioId, puente, ReglasBusquedaLugares.MaximoLugaresListado, ct);
+        // La lista de lugares viables (HU6) no se personaliza: muestra todo lo que cabe, por distancia.
+        var busqueda = await BuscarAsync(usuarioId, puente, ReglasBusquedaLugares.MaximoLugaresListado, personalizar: false, ct);
+        var zona = busqueda.Zona;
+        var candidatos = busqueda.Candidatos;
 
         if (zona is null)
             return new ResultadoBusquedaLugaresDto(EstadoSinZona, ReglasBusquedaLugares.MensajeSinZona, null, null, disponible, []);
@@ -40,23 +45,30 @@ public class BusquedaLugaresService : IRecuperadorLugares
         return new ResultadoBusquedaLugaresDto(EstadoOk, null, zonaDto, zona.RadioMaxM, disponible, candidatos.Select(ADto).ToList());
     }
 
+    /// <summary>
+    /// Los candidatos para el asistente (HU7). HU30: con 3 feedbacks o más, la afinidad del estudiante decide el orden (y
+    /// saca los lugares con «no me sirve» de los últimos 30 días) ANTES del recorte a 10, así decide cuáles llegan al LLM.
+    /// </summary>
     public async Task<ContextoRecuperado> RecuperarAsync(int usuarioId, Puente puente, CancellationToken ct = default)
     {
-        var (zona, candidatos) = await BuscarAsync(usuarioId, puente, ReglasBusquedaLugares.MaximoCandidatosAsistente, ct);
-        return new ContextoRecuperado(zona?.Id, zona?.RadioMaxM, candidatos);
+        var b = await BuscarAsync(usuarioId, puente, ReglasBusquedaLugares.MaximoCandidatosAsistente, personalizar: true, ct);
+        return new ContextoRecuperado(b.Zona?.Id, b.Zona?.RadioMaxM, b.Candidatos, b.Personalizado, b.Preferencias);
     }
 
-    private async Task<(Zona? Zona, List<LugarCandidato> Candidatos)> BuscarAsync(
-        int usuarioId, Puente puente, int maximo, CancellationToken ct)
+    private sealed record Busqueda(Zona? Zona, List<LugarCandidato> Candidatos, bool Personalizado = false,
+        ReglasAfinidad.ResumenPreferencias? Preferencias = null);
+
+    private async Task<Busqueda> BuscarAsync(int usuarioId, Puente puente, int maximo, bool personalizar, CancellationToken ct)
     {
         var zona = await _lugares.ObtenerZonaDelUsuarioAsync(usuarioId, ct);
-        if (zona is null) return (null, []);
+        if (zona is null) return new Busqueda(null, []);
 
         var disponible = MinutosDelPuente(puente);
         var activos = (await _lugares.ListarActivosAsync(ct))
             .Where(l => l.Estado == ReglasBusquedaLugares.EstadoActivo);
 
-        var candidatos = activos
+        // Los filtros de siempre (estado, métricas, radio y CabeEnElPuente): la afinidad solo reordena lo que queda.
+        var queCaben = activos
             .Select(l =>
             {
                 var distancia = (int)Math.Round(ReglasBusquedaLugares.DistanciaMetros(zona.Latitud, zona.Longitud, l.Latitud, l.Longitud));
@@ -68,8 +80,21 @@ public class BusquedaLugaresService : IRecuperadorLugares
             .Where(c => ReglasBusquedaLugares.TieneMetricasCompletas(c.Nombre, c.Categoria, c.DistanciaM, c.DuracionEstimadaMin))
             .Where(c => ReglasBusquedaLugares.EstaDentroDelRadio(c.DistanciaM, zona.RadioMaxM))
             .Where(c => ReglasBusquedaLugares.CabeEnElPuente(c.TiempoTrasladoMin, c.DuracionEstimadaMin, disponible))
-            .OrderBy(c => c.DistanciaM)
-            .ThenBy(c => c.Nombre)
+            .ToList();
+
+        var perfil = ReglasAfinidad.Perfil.Vacio;
+        Dictionary<int, List<int>> etiquetas = [];
+        if (personalizar && queCaben.Count > 0)
+        {
+            perfil = ReglasAfinidad.ArmarPerfil(await _lugares.ListarVotosDelUsuarioAsync(usuarioId, ct), _reloj.GetUtcNow().UtcDateTime);
+            if (perfil.Personaliza)
+                etiquetas = await _lugares.ListarEtiquetasDeLugaresAsync(queCaben.Select(c => c.LugarId).ToList(), ct);
+        }
+
+        // Sin personalización, Ordenar deja el orden de siempre (distancia y nombre).
+        var candidatos = ReglasAfinidad
+            .Ordenar(queCaben, c => new ReglasAfinidad.CandidatoAfinidad(c.LugarId, c.Nombre, c.DistanciaM,
+                etiquetas.GetValueOrDefault(c.LugarId) ?? []), perfil)
             .Take(maximo)
             .ToList();
 
@@ -81,7 +106,21 @@ public class BusquedaLugaresService : IRecuperadorLugares
                 : c)
             .ToList();
 
-        return (zona, candidatos);
+        if (!perfil.Personaliza) return new Busqueda(zona, candidatos);
+
+        var nombres = await _lugares.ListarNombresEtiquetasAsync(ct);
+        candidatos = candidatos
+            .Select(c =>
+            {
+                var suyas = etiquetas.GetValueOrDefault(c.LugarId) ?? [];
+                return c with
+                {
+                    Etiquetas = suyas.Where(nombres.ContainsKey).Select(e => nombres[e]).ToList(),
+                    Afinidad = ReglasAfinidad.Puntaje(suyas, perfil)
+                };
+            })
+            .ToList();
+        return new Busqueda(zona, candidatos, true, ReglasAfinidad.Resumir(perfil, nombres));
     }
 
     private static int MinutosDelPuente(Puente puente) => (int)(puente.HoraFin - puente.HoraInicio).TotalMinutes;

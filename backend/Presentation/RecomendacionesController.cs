@@ -17,7 +17,13 @@ namespace Breaku.Api.Controllers;
 public class RecomendacionesController : ControllerBase
 {
     private readonly RecomendacionService _service;
-    public RecomendacionesController(RecomendacionService service) => _service = service;
+    private readonly ILogger<RecomendacionesController> _logger;
+
+    public RecomendacionesController(RecomendacionService service, ILogger<RecomendacionesController> logger)
+    {
+        _service = service;
+        _logger = logger;
+    }
 
     private int UsuarioId =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")
@@ -30,6 +36,7 @@ public class RecomendacionesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status503ServiceUnavailable)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status500InternalServerError)]
     public Task<IActionResult> Recomendar(SolicitudRecomendacionDto req, CancellationToken ct)
         => Ejecutar(async () => Ok(await _service.RecomendarAsync(UsuarioId, req, ct)));
 
@@ -53,6 +60,14 @@ public class RecomendacionesController : ControllerBase
                 "ASISTENTE_NO_DISPONIBLE" => StatusCode(StatusCodes.Status503ServiceUnavailable, body),
                 _ => BadRequest(body)
             };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            // HU30: un error que no esperábamos (por ejemplo, al leer el historial) responde 500 controlado y trazable.
+            var traza = HttpContext.TraceIdentifier;
+            _logger.LogError(ex, "Error inesperado en recomendaciones (traza {Traza})", traza);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ErrorNegocioDto("ERROR_INESPERADO", $"No pudimos completar la operación. Código de seguimiento: {traza}."));
         }
     }
 }

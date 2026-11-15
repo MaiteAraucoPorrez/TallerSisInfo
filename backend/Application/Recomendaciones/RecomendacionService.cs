@@ -83,7 +83,8 @@ public class RecomendacionService
 
         if (candidatos.Count == 0) return await SinResultadosAsync(log, ct);
 
-        var prompt = PromptRecomendacion.Construir(candidatos, minutosDisponibles, entrada);
+        // HU30: el LLM recibe el resumen de preferencias (solo etiquetas); FiltrarSoloRecuperados sigue mandando abajo.
+        var prompt = PromptRecomendacion.Construir(candidatos, minutosDisponibles, entrada, contexto.Preferencias);
         log.PromptEnviado = prompt.ComoTexto();
 
         RespuestaAsistente respuesta;
@@ -96,7 +97,7 @@ public class RecomendacionService
         }
         catch (Exception) when (!ct.IsCancellationRequested)
         {
-            return await RespaldoAsync(log, candidatos, minutosDisponibles, reloj, ct);
+            return await RespaldoAsync(log, candidatos, minutosDisponibles, contexto.Personalizado, reloj, ct);
         }
 
         log.Modelo = respuesta.Modelo;
@@ -133,11 +134,12 @@ public class RecomendacionService
     }
 
     private async Task<RespuestaRecomendacionDto> RespaldoAsync(LogAuditoriaRag log, List<LugarCandidato> candidatos, int minutosDisponibles,
-        Stopwatch reloj, CancellationToken ct)
+        bool personalizado, Stopwatch reloj, CancellationToken ct)
     {
+        // HU30: el plan B también respeta la afinidad (y los vetados ya no están entre los candidatos).
         var elegidos = ReglasRendimiento.Respaldo(
-            candidatos.Select(c => new ReglasRendimiento.Candidato(c.LugarId, c.TiempoTrasladoMin, c.DistanciaM, c.DuracionEstimadaMin)),
-            minutosDisponibles);
+            candidatos.Select(c => new ReglasRendimiento.Candidato(c.LugarId, c.TiempoTrasladoMin, c.DistanciaM, c.DuracionEstimadaMin, c.Afinidad)),
+            minutosDisponibles, personalizado);
 
         log.Estado = LogAuditoriaRag.EstadoOk;
         log.Modelo = ReglasRendimiento.ModeloRespaldo;

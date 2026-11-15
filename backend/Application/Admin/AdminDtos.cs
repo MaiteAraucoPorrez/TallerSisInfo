@@ -23,10 +23,21 @@ public record LugarAdminDto(
     string? TipoLugar = null,
     /// <summary>De 1 a 5, a partir de los votos de los estudiantes; null si nadie votó.</summary>
     decimal? Puntuacion = null,
-    int Votos = 0
+    int Votos = 0,
+    /// <summary>HU30: los nombres de sus etiquetas de tipo de actividad (vacío si no tiene).</summary>
+    List<string>? Etiquetas = null
 );
 
 public record CambioEstadoLugarDto(string Estado);
+
+/// <summary>HU30: una etiqueta del catálogo de tipos de actividad.</summary>
+/// <param name="Id" example="3">Identificador.</param>
+/// <param name="Nombre" example="Deportes">Nombre único.</param>
+public record EtiquetaDto(int Id, string Nombre);
+
+/// <summary>HU30: etiqueta nueva para el catálogo.</summary>
+/// <param name="Nombre" example="Voluntariado">De 1 a 50 caracteres; única (sin distinguir mayúsculas ni tildes).</param>
+public record NuevaEtiquetaDto(string? Nombre);
 
 /// <summary>Datos de un lugar para crearlo o editarlo. Las horas en <c>HH:mm</c>; apertura y cierre van juntas o ninguna.</summary>
 /// <param name="Nombre" example="Biblioteca Central">De 3 a 100 caracteres; único en el catálogo.</param>
@@ -47,7 +58,8 @@ public record GuardarLugarDto(
     int? DuracionEstimadaMin,
     string? HoraApertura,
     string? HoraCierre,
-    int? MinAPieDesdeBloqueA);
+    int? MinAPieDesdeBloqueA,
+    List<int>? EtiquetaIds = null);
 
 /// <summary>Un lugar con todos sus datos editables (para el formulario de edición).</summary>
 public record LugarDetalleAdminDto(
@@ -63,7 +75,10 @@ public record LugarDetalleAdminDto(
     int? MinAPieDesdeBloqueA,
     string Estado,
     bool Validado,
-    string? FotoUrl = null);
+    string? FotoUrl = null,
+    /// <summary>HU30: sus etiquetas del catálogo.</summary>
+    List<EtiquetaDto>? Etiquetas = null,
+    bool Recomendable = true);
 
 /// <summary>Lugar recién creado.</summary>
 public record LugarCreadoDto(int Id);

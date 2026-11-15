@@ -43,9 +43,17 @@ public class AdminRepository : IAdminRepository
                 FROM lugar l JOIN categoria c ON c.id = l.categoria_id
                 ORDER BY FIELD(l.estado, 'EN_REVISION', 'ACTIVO', 'INACTIVO'), l.nombre
                 """).ToListAsync(ct);
+        // HU30: las etiquetas de cada lugar, en una consulta.
+        var etiquetas = (await _db.Database.SqlQuery<FilaEtiquetaLugar>($"""
+                SELECT le.lugar_id AS LugarId, e.id AS Id, e.nombre AS Nombre
+                FROM lugar_etiqueta le JOIN etiqueta_actividad e ON e.id = le.etiqueta_id
+                ORDER BY e.nombre
+                """).ToListAsync(ct))
+            .GroupBy(e => e.LugarId).ToDictionary(g => g.Key, g => g.Select(e => e.Nombre).ToList());
         return filas.Select(f => new LugarAdminDto(f.Id, f.Nombre, f.Categoria, f.Estado, f.DuracionEstimadaMin,
             Hora(f.HoraApertura), Hora(f.HoraCierre), (int)f.VecesRecomendado, f.Validado, f.Recomendable, f.TipoLugar,
-            ReglasFeedback.Puntuacion((int)f.MeGusta, (int)f.NoMeSirve), (int)(f.MeGusta + f.NoMeSirve))).ToList();
+            ReglasFeedback.Puntuacion((int)f.MeGusta, (int)f.NoMeSirve), (int)(f.MeGusta + f.NoMeSirve),
+            etiquetas.GetValueOrDefault(f.Id) ?? [])).ToList();
     }
 
     public async Task<string?> CambiarEstadoLugarAsync(int lugarId, string estado, int adminId, CancellationToken ct = default)
@@ -114,9 +122,18 @@ public class AdminRepository : IAdminRepository
     public async Task<LugarDetalleAdminDto?> ObtenerLugarAsync(int lugarId, CancellationToken ct = default)
     {
         var f = await LeerLugarAsync(lugarId, bloquear: false, ct);
-        return f is null ? null : new LugarDetalleAdminDto(f.Id, f.Nombre, f.Descripcion, f.CategoriaId, f.Latitud, f.Longitud,
+        if (f is null) return null;
+        var etiquetas = await _db.Database.SqlQuery<FilaEtiquetaLugar>($"""
+                SELECT le.lugar_id AS LugarId, e.id AS Id, e.nombre AS Nombre
+                FROM lugar_etiqueta le JOIN etiqueta_actividad e ON e.id = le.etiqueta_id
+                WHERE le.lugar_id = {lugarId} ORDER BY e.nombre
+                """).ToListAsync(ct);
+        var recomendable = (await _db.Database.SqlQuery<bool>($"SELECT recomendable AS Value FROM lugar WHERE id = {lugarId}")
+            .ToListAsync(ct)).FirstOrDefault(true);
+        return new LugarDetalleAdminDto(f.Id, f.Nombre, f.Descripcion, f.CategoriaId, f.Latitud, f.Longitud,
             f.DuracionEstimadaMin, Hora(f.HoraApertura), Hora(f.HoraCierre), f.MinAPieDesdeBloqueA, f.Estado, f.Validado,
-            ReglasFotoLugar.Url(f.Id, f.FotoActualizadaEn is { } v ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : null));
+            ReglasFotoLugar.Url(f.Id, f.FotoActualizadaEn is { } v ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : null),
+            etiquetas.Select(e => new EtiquetaDto(e.Id, e.Nombre)).ToList(), recomendable);
     }
 
     public async Task<bool> NombreEnUsoAsync(string nombre, int? excluirId, CancellationToken ct = default)
@@ -137,6 +154,7 @@ public class AdminRepository : IAdminRepository
                             'ACTIVO', TRUE, TRUE, {adminId}, {adminId})
                     """, ct);
             var id = (int)(await _db.Database.SqlQuery<ulong>($"SELECT LAST_INSERT_ID() AS Value").ToListAsync(ct)).Single();
+            await GuardarEtiquetasAsync(id, d.EtiquetaIds, ct);
             await HistorialLugarAsync(id, "CREATE", null, JsonLugar(d), adminId, ct);
             await tx.CommitAsync(ct);
             return id;
@@ -163,6 +181,7 @@ public class AdminRepository : IAdminRepository
                            min_a_pie_desde_bloque_a = {d.MinAPieDesdeBloqueA}, updated_at = UTC_TIMESTAMP(6), updated_by = {adminId}
                     WHERE id = {lugarId}
                     """, ct);
+            await GuardarEtiquetasAsync(lugarId, d.EtiquetaIds, ct);
             await HistorialLugarAsync(lugarId, "UPDATE", JsonLugar(antes.ADatos()), JsonLugar(d), adminId, ct);
             await tx.CommitAsync(ct);
             return true;
@@ -220,6 +239,16 @@ public class AdminRepository : IAdminRepository
                 VALUES ('LUGAR', {lugarId}, {accion}, CAST({antes} AS JSON), CAST({despues} AS JSON), {adminId})
                 """, ct);
 
+    /// <summary>HU30: reemplaza las etiquetas del lugar (dentro de la transacción de quien llama). null = no se tocan.</summary>
+    private async Task GuardarEtiquetasAsync(int lugarId, IReadOnlyList<int>? etiquetaIds, CancellationToken ct)
+    {
+        if (etiquetaIds is null) return;
+        await _db.Database.ExecuteSqlAsync($"DELETE FROM lugar_etiqueta WHERE lugar_id = {lugarId}", ct);
+        foreach (var etiquetaId in etiquetaIds)
+            await _db.Database.ExecuteSqlAsync(
+                $"INSERT INTO lugar_etiqueta (lugar_id, etiqueta_id) VALUES ({lugarId}, {etiquetaId})", ct);
+    }
+
     private static string JsonLugar(DatosLugar d) => JsonSerializer.Serialize(new
     {
         nombre = d.Nombre,
@@ -230,7 +259,8 @@ public class AdminRepository : IAdminRepository
         duracion_estimada_min = d.DuracionEstimadaMin,
         hora_apertura = d.HoraApertura?.ToString("HH:mm"),
         hora_cierre = d.HoraCierre?.ToString("HH:mm"),
-        min_a_pie_desde_bloque_a = d.MinAPieDesdeBloqueA
+        min_a_pie_desde_bloque_a = d.MinAPieDesdeBloqueA,
+        etiquetas = d.EtiquetaIds
     });
 
     private static bool EsNombreRepetido(Exception ex)
@@ -446,6 +476,13 @@ public class AdminRepository : IAdminRepository
         public int? ObjetoId { get; set; }
         public string? Respuesta { get; set; }
         public DateTime? RevisadoEn { get; set; }
+    }
+
+    private sealed class FilaEtiquetaLugar
+    {
+        public int LugarId { get; set; }
+        public int Id { get; set; }
+        public string Nombre { get; set; } = "";
     }
 
     private sealed class FilaRevision

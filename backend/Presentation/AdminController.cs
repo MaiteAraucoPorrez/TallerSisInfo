@@ -68,8 +68,13 @@ public class AdminController : ControllerBase
         }
         catch (ReglaNegocioException ex)
         {
+            // HU30: activar un lugar recomendable sin etiquetas es 400 VALIDACION.
             var body = new ErrorNegocioDto(ex.Codigo, ex.Message);
             return ex.Codigo == "NO_ENCONTRADO" ? NotFound(body) : BadRequest(body);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            return ErrorInesperado(ex, "el cambio de estado de un lugar");
         }
     }
 
@@ -106,6 +111,38 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Campus(CancellationToken ct) => Ok(await _service.ListarCampusAsync(ct));
+
+    /// <summary>HU30: el catálogo de etiquetas de tipo de actividad (para el selector del formulario de lugar).</summary>
+    /// <response code="200">Las etiquetas, por nombre.</response>
+    /// <response code="500">Error inesperado (<c>ERROR_INESPERADO</c>, con el código de seguimiento).</response>
+    [HttpGet("etiquetas")]
+    [ProducesResponseType(typeof(List<EtiquetaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status500InternalServerError)]
+    public Task<IActionResult> Etiquetas(CancellationToken ct) => Responder(async () => Ok(await _service.ListarEtiquetasAsync(ct)));
+
+    /// <summary>HU30: agrega una etiqueta al catálogo. Solo un administrador.</summary>
+    /// <remarks>
+    /// Ejemplo de petición:
+    /// <code>
+    /// { "nombre": "Voluntariado" }
+    /// </code>
+    /// </remarks>
+    /// <response code="201">Etiqueta creada (<c>{ "id": …, "nombre": … }</c>).</response>
+    /// <response code="400">Nombre vacío o de más de 50 caracteres (<c>VALIDACION</c>).</response>
+    /// <response code="403">El usuario no es administrador.</response>
+    /// <response code="409">Ya existe una con ese nombre, sin distinguir mayúsculas ni tildes (<c>NOMBRE_REPETIDO</c>).</response>
+    /// <response code="500">Error inesperado (<c>ERROR_INESPERADO</c>, con el código de seguimiento).</response>
+    [HttpPost("etiquetas")]
+    [ProducesResponseType(typeof(EtiquetaDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status500InternalServerError)]
+    public Task<IActionResult> CrearEtiqueta(NuevaEtiquetaDto req, CancellationToken ct)
+        => Responder(async () => StatusCode(StatusCodes.Status201Created, await _service.CrearEtiquetaAsync(req, ct)));
 
     /// <summary>Un lugar con todos sus datos editables.</summary>
     /// <response code="200">El lugar.</response>
@@ -221,6 +258,10 @@ public class AdminController : ControllerBase
                 "NOMBRE_REPETIDO" or "EN_USO" => Conflict(body),
                 _ => BadRequest(body)
             };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            return ErrorInesperado(ex, "el catálogo de lugares");
         }
     }
 
