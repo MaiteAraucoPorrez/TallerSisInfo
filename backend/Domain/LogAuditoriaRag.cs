@@ -4,6 +4,7 @@ public class LogAuditoriaRag
 {
     public const string TipoRecomendacion = "RECOMENDACION";
     public const string TipoExtraccionComunidad = "EXTRACCION_COMUNIDAD";
+    public const string TipoExtraccionEvento = "EXTRACCION_EVENTO";
 
     public const string EstadoOk = "OK";
     public const string EstadoSinResultados = "SIN_RESULTADOS";
