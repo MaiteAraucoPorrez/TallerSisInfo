@@ -12,12 +12,29 @@ public class AdminService
 
     private readonly IAdminRepository _repo;
     private readonly ITiempoReal _tiempoReal;
+    private readonly IEtiquetaRepository? _etiquetas;
 
-    public AdminService(IAdminRepository repo, ITiempoReal? tiempoReal = null)
+    public AdminService(IAdminRepository repo, ITiempoReal? tiempoReal = null, IEtiquetaRepository? etiquetas = null)
     {
         _repo = repo;
         _tiempoReal = tiempoReal ?? SinTiempoReal.Instancia;
+        _etiquetas = etiquetas;
     }
+
+    // ---------- HU30: catálogo de etiquetas de tipo de actividad ----------
+
+    public Task<List<EtiquetaDto>> ListarEtiquetasAsync(CancellationToken ct = default) => Etiquetas.ListarAsync(ct);
+
+    public async Task<EtiquetaDto> CrearEtiquetaAsync(NuevaEtiquetaDto req, CancellationToken ct = default)
+    {
+        var nombre = ReglasEtiquetas.LimpiarNombre(req.Nombre);
+        if (ReglasEtiquetas.ValidarNombre(nombre) is { } error) throw new ReglaNegocioException("VALIDACION", error);
+        if (await Etiquetas.NombreEnUsoAsync(nombre, ct))
+            throw new ReglaNegocioException("NOMBRE_REPETIDO", ReglasEtiquetas.MensajeRepetida);
+        return new EtiquetaDto(await Etiquetas.CrearAsync(nombre, ct), nombre);
+    }
+
+    private IEtiquetaRepository Etiquetas => _etiquetas ?? throw new InvalidOperationException("Falta IEtiquetaRepository.");
 
     public Task<ResumenAdminDto> ResumenAsync(CancellationToken ct = default) => _repo.ResumenAsync(ct);
 
@@ -28,6 +45,12 @@ public class AdminService
         var estado = req.Estado?.Trim().ToUpperInvariant() ?? "";
         if (!EstadosLugar.Contains(estado))
             throw new ReglaNegocioException("VALIDACION", "El estado tiene que ser ACTIVO, EN_REVISION o INACTIVO.");
+
+        // HU30: un lugar recomendable no se activa sin al menos una etiqueta del catálogo.
+        if (estado == "ACTIVO" && _etiquetas is not null
+            && await _etiquetas.EstadoDelLugarAsync(lugarId, ct) is { } actual
+            && !ReglasEtiquetas.PuedeActivarse(actual.Recomendable, actual.Etiquetas))
+            throw new ReglaNegocioException("VALIDACION", ReglasEtiquetas.MensajeSinEtiqueta);
 
         var anterior = await _repo.CambiarEstadoLugarAsync(lugarId, estado, adminId, ct);
         if (anterior is null) throw new ReglaNegocioException("NO_ENCONTRADO", "El lugar no existe.");
@@ -52,13 +75,15 @@ public class AdminService
     /// <summary>Crea un lugar en el catálogo: queda ACTIVO y validado (lo cargó el admin) y se puede recomendar.</summary>
     public async Task<LugarCreadoDto> CrearLugarAsync(GuardarLugarDto req, int adminId, CancellationToken ct = default)
     {
-        var datos = await ValidarLugarAsync(req, null, ct);
+        // Se crea ACTIVO y recomendable: HU30 pide al menos una etiqueta.
+        var datos = await ValidarLugarAsync(req, null, quedaActivoYRecomendable: true, ct);
         return new LugarCreadoDto(await _repo.CrearLugarAsync(datos, adminId, ct));
     }
 
     public async Task EditarLugarAsync(int lugarId, GuardarLugarDto req, int adminId, CancellationToken ct = default)
     {
-        var datos = await ValidarLugarAsync(req, lugarId, ct);
+        var actual = _etiquetas is null ? null : await _etiquetas.EstadoDelLugarAsync(lugarId, ct);
+        var datos = await ValidarLugarAsync(req, lugarId, actual is { Estado: "ACTIVO", Recomendable: true }, ct);
         if (!await _repo.EditarLugarAsync(lugarId, datos, adminId, ct))
             throw new ReglaNegocioException("NO_ENCONTRADO", "El lugar no existe.");
     }
@@ -74,7 +99,7 @@ public class AdminService
         if (!await _repo.EliminarLugarAsync(lugarId, adminId, ct)) throw new ReglaNegocioException("NO_ENCONTRADO", "El lugar no existe.");
     }
 
-    private async Task<DatosLugar> ValidarLugarAsync(GuardarLugarDto req, int? lugarId, CancellationToken ct)
+    private async Task<DatosLugar> ValidarLugarAsync(GuardarLugarDto req, int? lugarId, bool quedaActivoYRecomendable, CancellationToken ct)
     {
         var apertura = LeerHora(req.HoraApertura);
         var cierre = LeerHora(req.HoraCierre);
@@ -90,7 +115,16 @@ public class AdminService
             throw new ReglaNegocioException("VALIDACION", ReglasLugar.MensajeCategoria);
         if (await _repo.NombreEnUsoAsync(datos.Nombre!, lugarId, ct))
             throw new ReglaNegocioException("NOMBRE_REPETIDO", ReglasLugar.MensajeNombreRepetido);
-        return datos;
+
+        // HU30: etiquetas del catálogo. Al crear son obligatorias; al editar, si no vienen, el lugar conserva las suyas.
+        if (_etiquetas is null) return datos;
+        var etiquetaIds = ReglasEtiquetas.Normalizar(req.EtiquetaIds) ?? (lugarId is null ? [] : null);
+        if (etiquetaIds is null) return datos;
+
+        var catalogo = (await _etiquetas.ListarAsync(ct)).Select(e => e.Id).ToList();
+        if (ReglasEtiquetas.ValidarAsignacion(etiquetaIds, catalogo, quedaActivoYRecomendable) is { } errorEtiquetas)
+            throw new ReglaNegocioException("VALIDACION", errorEtiquetas);
+        return datos with { EtiquetaIds = etiquetaIds };
 
         // Una hora que vino pero no se puede leer cuenta como horario inválido (no como «sin horario»).
         TimeOnly? LeerHora(string? texto)

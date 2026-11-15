@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<INotificacionRepository, NotificacionRepository>();
         services.AddScoped<IRecomendacionRepository, RecomendacionRepository>();
         services.AddScoped<IAdminRepository, AdminRepository>();
+        services.AddScoped<IEtiquetaRepository, EtiquetaRepository>();
 
         services.AddScoped<ILugarRepository, LugarRepository>();
         services.AddScoped<IFotoLugarRepository, FotoLugarRepository>();

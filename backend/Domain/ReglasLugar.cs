@@ -12,7 +12,9 @@ public sealed record DatosLugar(
     int? DuracionEstimadaMin,
     TimeOnly? HoraApertura,
     TimeOnly? HoraCierre,
-    int? MinAPieDesdeBloqueA);
+    int? MinAPieDesdeBloqueA,
+    // HU30: las etiquetas del catálogo; null = no se tocan (el lugar conserva las que tenía).
+    IReadOnlyList<int>? EtiquetaIds = null);
 
 /// <summary>Un campus activo: el lugar tiene que quedar dentro de alguno.</summary>
 public readonly record struct CampusRef(string Nombre, decimal Latitud, decimal Longitud, int RadioMaxM);
