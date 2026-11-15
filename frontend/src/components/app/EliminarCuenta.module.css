@@ -1,0 +1,85 @@
+.zona {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 18px;
+  border: 1.5px solid var(--error-borde);
+  border-radius: 18px;
+  background: var(--error-fondo);
+}
+
+.zona h3 {
+  margin: 0;
+  color: var(--error-texto);
+  font-size: 1rem;
+}
+
+.ayuda {
+  margin: 0;
+  color: var(--texto-tenue);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.lista {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.campo {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.campo input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 500;
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--ucb-celeste);
+  box-shadow: 0 0 0 4px rgba(47, 127, 209, 0.16);
+}
+
+.error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--error-fondo);
+  border: 1px solid var(--error-borde);
+  color: var(--error-texto);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.google {
+  display: grid;
+  gap: 8px;
+}
+
+.separador {
+  text-align: center;
+  color: var(--texto-tenue);
+  font-size: 0.85rem;
+}
+
+.contenedorGoogle {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}

@@ -35,6 +35,14 @@ export const obtenerPerfil = () => pedirApi<Perfil>("/api/perfil");
 export const cambiarContrasena = (actual: string | null, nueva: string, confirmacion: string) =>
   pedirApi<void>("/api/perfil/contrasena", { method: "PUT", body: JSON.stringify({ actual, nueva, confirmacion }) });
 
+/**
+ * HU29: elimina la cuenta propia. Con contraseña o con el ID token de un nuevo login de Google. Responde 204.
+ * Los rechazos (contraseña o Google incorrectos, sanción activa, límite) llegan como 400/429, nunca como 401,
+ * así que no cierran la sesión.
+ */
+export const eliminarCuenta = (credencial: { contrasena: string } | { credencialGoogle: string }) =>
+  pedirApi<void>("/api/perfil", { method: "DELETE", body: JSON.stringify({ confirmacion: "ELIMINAR", ...credencial }) });
+
 /** Las mismas reglas que el servidor (ReglasCuenta.ValidarNueva), para avisar antes de enviar. */
 export function errorContrasenaNueva(nueva: string, confirmacion: string): string | null {
   if (!nueva) return "Escribe la nueva contraseña.";
