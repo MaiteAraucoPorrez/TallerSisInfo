@@ -15,6 +15,7 @@ import CompanerosLibres from "@/components/comunidades/CompanerosLibres";
 import DatoEditable from "@/components/comunidades/DatoEditable";
 import InvitacionGrupo from "@/components/comunidades/InvitacionGrupo";
 import ParticipantesComunidad from "@/components/comunidades/ParticipantesComunidad";
+import ReportarObjeto from "@/components/app/ReportarObjeto";
 import ArteCategoria from "@/components/inicio/ArteCategoria";
 import {
   ActividadExtraida,
@@ -663,7 +664,11 @@ function Comunidades() {
                                 </span>
                               )}
                             </div>
-                            <small className={estilos.creador}>{c.esMia ? "Creada por ti" : `Creada por ${c.creador}`}</small>
+                            <div className={estilos.filaCreador}>
+                              <small className={estilos.creador}>{c.esMia ? "Creada por ti" : `Creada por ${c.creador}`}</small>
+                              {/* HU27: reportar una comunidad ajena que no cumple las normas. */}
+                              {!c.esMia && <ReportarObjeto tipo="COMUNIDAD" id={c.id} nombre={c.actividad} className={estilos.reportar} />}
+                            </div>
                             <AsistenciaComunidad
                               comunidad={c}
                               onRespondida={alResponder}

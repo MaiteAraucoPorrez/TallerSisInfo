@@ -616,6 +616,25 @@
   font-size: 0.8rem;
 }
 
+.filaCreador {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.filaCreador .creador {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* El botón «Reportar» queda discreto junto a quien creó la comunidad; el margen negativo alinea su texto con el borde. */
+.reportar {
+  flex-shrink: 0;
+  margin-right: -10px;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .ejemplo:hover:not(:disabled) {
     border-color: var(--ucb-azul-medio);
