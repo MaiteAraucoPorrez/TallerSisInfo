@@ -19,11 +19,22 @@ public class AdminController : ControllerBase
 
     private readonly AdminService _service;
     private readonly FotoLugarService _fotos;
+    private readonly ILogger<AdminController> _logger;
 
-    public AdminController(AdminService service, FotoLugarService fotos)
+    public AdminController(AdminService service, FotoLugarService fotos, ILogger<AdminController> logger)
     {
         _service = service;
         _fotos = fotos;
+        _logger = logger;
+    }
+
+    /// <summary>Un error que no esperábamos: se registra con la traza de la solicitud y se responde 500 con ese código.</summary>
+    private ObjectResult ErrorInesperado(Exception ex, string operacion)
+    {
+        var traza = HttpContext.TraceIdentifier;
+        _logger.LogError(ex, "Error inesperado en {Operacion} (traza {Traza})", operacion, traza);
+        return StatusCode(StatusCodes.Status500InternalServerError,
+            new ErrorNegocioDto("ERROR_INESPERADO", $"No pudimos completar la operación. Código de seguimiento: {traza}."));
     }
 
     private int AdminId =>
@@ -213,12 +224,45 @@ public class AdminController : ControllerBase
         }
     }
 
+    /// <summary>Bandeja de reportes: primero los pendientes. Cada uno dice a qué lugar, comunidad o evento se refiere.</summary>
+    /// <remarks>
+    /// <c>objetoTipo</c> es <c>LUGAR</c>, <c>COMUNIDAD</c> o <c>EVENTO</c> (<c>null</c> en «algo no funciona» y sugerencias),
+    /// <c>objetoId</c> su id y <c>objeto</c> su nombre. Los revisados traen <c>respuesta</c> (si se dejó) y <c>revisadoEn</c>.
+    /// </remarks>
+    /// <response code="200">Hasta 100 reportes.</response>
+    /// <response code="500">Error inesperado (<c>ERROR_INESPERADO</c>, con el código de seguimiento).</response>
     [HttpGet("reportes")]
     [ProducesResponseType(typeof(List<ReporteAdminDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Reportes(CancellationToken ct) => Ok(await _service.ListarReportesAsync(ct));
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Reportes(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.ListarReportesAsync(ct));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return ErrorInesperado(ex, "la bandeja de reportes");
+        }
+    }
 
+    /// <summary>Resuelve o descarta un reporte pendiente, con una respuesta opcional para el estudiante.</summary>
+    /// <remarks>
+    /// La decisión, la respuesta (hasta 500 caracteres) y el aviso <c>REPORTE_RESUELTO</c> para quien lo envió se guardan en
+    /// la misma transacción. El aviso lleva la respuesta recortada; completa se lee en «Mis reportes».
+    ///
+    /// Ejemplo de petición:
+    /// <code>
+    /// { "estado": "RESUELTO", "respuesta": "Gracias, ya corregimos el horario." }
+    /// </code>
+    /// </remarks>
+    /// <response code="204">Reporte revisado y estudiante avisado.</response>
+    /// <response code="400">Estado inválido o respuesta de más de 500 caracteres (<c>VALIDACION</c>).</response>
+    /// <response code="404">El reporte no existe (<c>NO_ENCONTRADO</c>).</response>
+    /// <response code="409">El reporte ya fue revisado (<c>YA_REVISADO</c>).</response>
+    /// <response code="500">Error inesperado (<c>ERROR_INESPERADO</c>, con el código de seguimiento); no se guardó nada.</response>
     [HttpPatch("reportes/{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status400BadRequest)]
@@ -226,6 +270,7 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ResolverReporte(int id, ResolverReporteDto req, CancellationToken ct)
     {
         try
@@ -242,6 +287,10 @@ public class AdminController : ControllerBase
                 "YA_REVISADO" => Conflict(body),
                 _ => BadRequest(body)
             };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return ErrorInesperado(ex, "la revisión de un reporte");
         }
     }
 

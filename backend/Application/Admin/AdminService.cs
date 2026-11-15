@@ -1,4 +1,5 @@
 using Breaku.Application.Horarios;
+using Breaku.Application.TiempoReal;
 using Breaku.Domain.Rules;
 
 namespace Breaku.Application.Admin;
@@ -10,7 +11,13 @@ public class AdminService
     public const int LimiteConsultasMaximo = 200;
 
     private readonly IAdminRepository _repo;
-    public AdminService(IAdminRepository repo) => _repo = repo;
+    private readonly ITiempoReal _tiempoReal;
+
+    public AdminService(IAdminRepository repo, ITiempoReal? tiempoReal = null)
+    {
+        _repo = repo;
+        _tiempoReal = tiempoReal ?? SinTiempoReal.Instancia;
+    }
 
     public Task<ResumenAdminDto> ResumenAsync(CancellationToken ct = default) => _repo.ResumenAsync(ct);
 
@@ -100,10 +107,19 @@ public class AdminService
         var decision = ReglasReporte.LeerDecision(req.Estado)
                        ?? throw new ReglaNegocioException("VALIDACION", ReglasReporte.MensajeDecisionInvalida);
 
-        var anterior = await _repo.ResolverReporteAsync(reporteId, decision, adminId, ct)
+        // HU27: respuesta opcional, sin caracteres de control y de hasta 500 caracteres.
+        var respuesta = ReglasReporte.LimpiarRespuesta(req.Respuesta is null ? null : ReglasSeguridadIa.Sanear(req.Respuesta));
+        if (ReglasReporte.ValidarRespuesta(respuesta) is { } error) throw new ReglaNegocioException("VALIDACION", error);
+
+        // La decisión, la respuesta y el aviso al estudiante se guardan juntos (una transacción en el repositorio).
+        var revision = await _repo.ResolverReporteAsync(reporteId, decision, respuesta, adminId, ct)
                        ?? throw new ReglaNegocioException("NO_ENCONTRADO", ReglasReporte.MensajeNoExiste);
-        if (!ReglasReporte.SePuedeRevisar(anterior))
+        if (!ReglasReporte.SePuedeRevisar(revision.EstadoAnterior))
             throw new ReglaNegocioException("YA_REVISADO", ReglasReporte.MensajeYaRevisado);
+
+        // La campanita del estudiante se actualiza en vivo; si el canal falla, el aviso ya quedó guardado.
+        try { await _tiempoReal.AvisosCambiaronAsync([revision.UsuarioId], ct); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
     }
 
     public async Task<List<ConsultaRagAdminDto>> ListarConsultasRagAsync(int? limite, CancellationToken ct = default)

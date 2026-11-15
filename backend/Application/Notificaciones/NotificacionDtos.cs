@@ -10,7 +10,9 @@ public record NotificacionDto(
     int? DuracionMinutos,
     bool Leida,
     DateTime CreadaEn,
-    int? ComunidadId = null
+    int? ComunidadId = null,
+    // HU27: en REPORTE_RESUELTO, el reporte (la campanita lleva a «Mis reportes»).
+    int? ReporteId = null
 );
 
 public record ConfiguracionNotificacionesDto(bool NotificacionesActivas);

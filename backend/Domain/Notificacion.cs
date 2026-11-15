@@ -8,6 +8,8 @@ public class Notificacion
     public const string TipoComunidadCerrada = "COMUNIDAD_CERRADA";
     /// <summary>HU28: aviso al estudiante por una advertencia. La suspensión y la baja no notifican.</summary>
     public const string TipoSancionAdvertencia = "SANCION_ADVERTENCIA";
+    /// <summary>HU27: un administrador resolvió o descartó un reporte tuyo (con su respuesta, recortada).</summary>
+    public const string TipoReporteResuelto = "REPORTE_RESUELTO";
     /// <summary>HU12: alguien de «Libres contigo» te saludó.</summary>
     public const string TipoConexionSolicitada = "CONEXION_SOLICITADA";
     /// <summary>HU12: la persona que saludaste aceptó; ya pueden ver su correo.</summary>
@@ -17,6 +19,8 @@ public class Notificacion
     public int UsuarioId { get; set; }
     public string Tipo { get; set; } = "";
     public int? ComunidadId { get; set; }
+    /// <summary>Solo en REPORTE_RESUELTO: el reporte al que apunta el aviso.</summary>
+    public int? ReporteId { get; set; }
     /// <summary>Solo en SANCION_ADVERTENCIA: la sanción a la que apunta el aviso.</summary>
     public int? SancionId { get; set; }
     /// <summary>Solo en CONEXION_SOLICITADA y CONEXION_ACEPTADA: el saludo al que apunta el aviso.</summary>

@@ -87,10 +87,21 @@ public record ReporteAdminDto(
     // HU28: a quién se puede sancionar desde el reporte: el creador de la comunidad o del evento reportado (estudiante).
     // Null si el reporte no es de una comunidad o un evento, si el objeto ya no existe o si lo creó un administrador.
     int? UsuarioReportadoId = null,
-    string? UsuarioReportadoNombre = null
+    string? UsuarioReportadoNombre = null,
+    // HU27: a qué apunta el reporte (LUGAR, COMUNIDAD o EVENTO; null en los generales), su id, y la revisión del admin.
+    string? ObjetoTipo = null,
+    int? ObjetoId = null,
+    string? Respuesta = null,
+    DateTime? RevisadoEn = null
 );
 
-public record ResolverReporteDto(string? Estado);
+/// <summary>Decisión del admin sobre un reporte.</summary>
+/// <param name="Estado" example="RESUELTO"><c>RESUELTO</c> o <c>DESCARTADO</c>.</param>
+/// <param name="Respuesta" example="Gracias, ya corregimos el horario.">Opcional, hasta 500 caracteres: el estudiante la ve en «Mis reportes» y, recortada, en el aviso.</param>
+public record ResolverReporteDto(string? Estado, string? Respuesta = null);
+
+/// <summary>Lo que había antes de revisar un reporte: su estado y quién lo envió (para avisarle en vivo).</summary>
+public record RevisionReporte(string EstadoAnterior, int UsuarioId);
 
 public record ConsultaRagAdminDto(
     long Id,
