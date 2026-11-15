@@ -867,12 +867,80 @@ paths:
           $ref: '#/components/responses/NoAutorizado'
         '403':
           description: El usuario no tiene rol `ADMIN`.
+  /api/admin/etiquetas:
+    get:
+      tags: [Administración]
+      operationId: listarEtiquetasAdmin
+      summary: 'HU30: catálogo de etiquetas de tipo de actividad (para el selector del formulario de lugar).'
+      security: [{ Bearer: [] }]
+      responses:
+        '200':
+          description: Etiquetas por nombre.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EtiquetaDto'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario no tiene rol `ADMIN`.
+        '500':
+          description: Error inesperado (`ERROR_INESPERADO`); el mensaje trae el código de seguimiento de la solicitud.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNegocioDto'
+    post:
+      tags: [Administración]
+      operationId: crearEtiquetaAdmin
+      summary: 'HU30: agrega una etiqueta al catálogo. Solo un administrador.'
+      security: [{ Bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre: { type: string, minLength: 1, maxLength: 50, example: Voluntariado }
+      responses:
+        '201':
+          description: Etiqueta creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EtiquetaDto'
+        '400':
+          description: Nombre vacío o de más de 50 caracteres (`VALIDACION`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNegocioDto'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario no tiene rol `ADMIN`.
+        '409':
+          description: Ya existe una con ese nombre, sin distinguir mayúsculas ni tildes (`NOMBRE_REPETIDO`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNegocioDto'
+        '500':
+          description: Error inesperado (`ERROR_INESPERADO`); el mensaje trae el código de seguimiento de la solicitud.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNegocioDto'
   /api/admin/lugares/{id}/estado:
     patch:
       tags: [Administración]
       operationId: cambiarEstadoLugar
       summary: Activa, pone en revisión o desactiva un lugar.
-      description: Solo los lugares `ACTIVO` entran en las recomendaciones. El cambio queda en `historial_cambio` con el estado anterior, el nuevo y el administrador.
+      description: Solo los lugares `ACTIVO` entran en las recomendaciones. El cambio queda en `historial_cambio` con el estado anterior, el nuevo y el administrador. HU30, un lugar recomendable no pasa a `ACTIVO` sin al menos una etiqueta del catálogo (`400 VALIDACION`).
       security: [{ Bearer: [] }]
       parameters:
         - name: id
@@ -891,7 +959,7 @@ paths:
         '204':
           description: Estado actualizado.
         '400':
-          description: El estado no es válido (`codigo` = `VALIDACION`).
+          description: El estado no es válido, o se intenta activar un lugar recomendable sin etiquetas (`codigo` = `VALIDACION`).
           content:
             application/json:
               schema:
@@ -2832,6 +2900,18 @@ components:
         horaApertura: { type: string, nullable: true, example: '08:00', description: '`HH:mm`; va junto con `horaCierre`.' }
         horaCierre: { type: string, nullable: true, example: '20:00', description: Después de la apertura. }
         minAPieDesdeBloqueA: { type: integer, format: int32, nullable: true, minimum: 0, maximum: 60, example: 3 }
+        etiquetaIds:
+          type: array
+          nullable: true
+          items: { type: integer, format: int32 }
+          example: [2, 3]
+          description: 'HU30: etiquetas del catálogo (`GET /api/admin/etiquetas`). Al crear, al menos una. Al editar, reemplaza las del lugar; si no viene, las conserva; un lugar activo y recomendable no puede quedar sin ninguna.'
+    EtiquetaDto:
+      type: object
+      description: 'HU30: etiqueta de tipo de actividad.'
+      properties:
+        id: { type: integer, format: int32, example: 3 }
+        nombre: { type: string, example: Deportes }
     LugarDetalleAdminDto:
       allOf:
         - $ref: '#/components/schemas/GuardarLugarDto'
@@ -2841,6 +2921,11 @@ components:
             estado: { type: string, enum: [ACTIVO, EN_REVISION, INACTIVO], example: ACTIVO }
             validado: { type: boolean, example: true }
             fotoUrl: { type: string, nullable: true, description: 'Ruta de la foto actual, o null si no tiene.', example: '/api/lugares/21/foto?v=639034123456789010' }
+            etiquetas:
+              type: array
+              items: { $ref: '#/components/schemas/EtiquetaDto' }
+              description: 'HU30: sus etiquetas del catálogo.'
+            recomendable: { type: boolean, example: true, description: 'false: punto de referencia; no necesita etiquetas.' }
     FotoGuardadaDto:
       type: object
       description: Foto guardada.
@@ -2885,6 +2970,7 @@ components:
         validado: { type: boolean, description: 'false: datos del relevamiento que el equipo todavía no revisó.', example: false }
         recomendable: { type: boolean, description: 'false: punto de referencia (campus, parqueo, bloques), nunca se recomienda.', example: true }
         tipoLugar: { type: string, nullable: true, example: comida }
+        etiquetas: { type: array, items: { type: string }, example: [Comer, Café y bebidas], description: 'HU30: nombres de sus etiquetas.' }
     CambioEstadoLugarDto:
       type: object
       required: [estado]
