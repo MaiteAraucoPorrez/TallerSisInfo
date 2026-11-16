@@ -20,6 +20,28 @@ public sealed class EventoRepository : IEventoRepository
     public Task<Lugar?> ObtenerLugarAsync(int lugarId, CancellationToken ct = default)
         => _db.Lugares.AsNoTracking().FirstOrDefaultAsync(l => l.Id == lugarId, ct);
 
+    public async Task<List<EventoParaPuente>> ListarPublicadosHoyAsync(
+        DateTime desdeUtc,
+        DateTime hastaUtc,
+        DateTime ahoraUtc,
+        CancellationToken ct = default)
+    {
+        var eventos = await _db.Eventos.AsNoTracking()
+            .Include(e => e.Lugar)
+            .Where(e => e.Estado == Evento.EstadoPublicado
+                && e.LugarId != null
+                && e.Inicio >= desdeUtc
+                && e.Inicio < hastaUtc
+                && e.Fin > ahoraUtc)
+            .OrderBy(e => e.Inicio)
+            .ToListAsync(ct);
+
+        return eventos
+            .Where(e => e.Lugar is not null)
+            .Select(e => new EventoParaPuente(e, e.Lugar!))
+            .ToList();
+    }
+
     public async Task<bool> CrearAsync(
         Evento evento,
         byte[]? imagen,

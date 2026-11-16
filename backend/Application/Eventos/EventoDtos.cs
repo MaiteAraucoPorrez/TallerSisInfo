@@ -34,6 +34,18 @@ public sealed record EventoLugarDto(int Id, string Nombre);
 
 public sealed record EventoListado(Evento Evento, string NombreLugar, DateTime? FotoActualizadaEn);
 
+public sealed record EventoParaPuente(Evento Evento, Lugar Lugar);
+
+public sealed record EventoEnPuenteDto(
+    int Id,
+    string Titulo,
+    string Inicio,
+    string Fin,
+    string Lugar,
+    string Asistencia,
+    int? MinutosPuedeQuedarse,
+    string Explicacion);
+
 public sealed record FotoEvento(byte[] Contenido, string TipoMime, DateTime ActualizadaEn, int CreadorId, string Estado);
 
 public sealed record ResolverEventoRequest(string? Estado, string? Motivo);

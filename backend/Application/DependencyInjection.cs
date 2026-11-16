@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<AdminService>();
         services.AddScoped<ReporteService>();
         services.AddScoped<EventoService>();
+        services.AddScoped<EventosEnPuenteService>();
 
         // Actividades y comunidades (HU10, HU11, HU13, HU14, HU15)
         services.AddScoped<ExtraccionActividadService>();

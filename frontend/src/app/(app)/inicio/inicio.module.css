@@ -23,6 +23,10 @@
   order: 1; /* en el celular, justo después de «Tu día» */
 }
 
+.zonaEventos {
+  order: 2;
+}
+
 .zonaAnimo {
   order: 2;
 }
@@ -733,4 +737,26 @@
   border: 1.5px solid var(--ucb-amarillo);
   background: var(--ucb-amarillo-suave);
   color: var(--ucb-amarillo-oscuro);
+}
+
+.eventoPuenteItem {
+  align-items: flex-start;
+}
+
+.eventoPuenteTexto {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.eventoPuenteTexto small {
+  display: flex;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.eventoExplicacion {
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
