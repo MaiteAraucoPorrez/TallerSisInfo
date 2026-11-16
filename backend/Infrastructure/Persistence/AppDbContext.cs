@@ -21,6 +21,8 @@ public class AppDbContext : DbContext
     public DbSet<LugarRecuperado> LugaresRecuperados => Set<LugarRecuperado>();
     public DbSet<Recomendacion> Recomendaciones => Set<Recomendacion>();
     public DbSet<Sancion> Sanciones => Set<Sancion>();
+    public DbSet<Evento> Eventos => Set<Evento>();
+    public DbSet<EventoImagen> EventoImagenes => Set<EventoImagen>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

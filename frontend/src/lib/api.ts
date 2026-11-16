@@ -11,7 +11,7 @@ export class ErrorApi extends Error {
   }
 }
 
-export async function pedirApi<T>(ruta: string, init: RequestInit = {}): Promise<T> {
+async function pedirRespuesta(ruta: string, init: RequestInit = {}): Promise<Response> {
   const token = obtenerToken();
   let res: Response;
   try {
@@ -38,8 +38,20 @@ export async function pedirApi<T>(ruta: string, init: RequestInit = {}): Promise
     }
     throw new Error(MENSAJE_SESION_VENCIDA);
   }
+  return res;
+}
+
+export async function pedirApi<T>(ruta: string, init: RequestInit = {}): Promise<T> {
+  const res = await pedirRespuesta(ruta, init);
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new ErrorApi(data?.mensaje ?? `Hubo un error inesperado (${res.status}).`, data?.codigo);
   return data as T;
+}
+
+export async function pedirArchivoApi(ruta: string): Promise<Blob> {
+  const res = await pedirRespuesta(ruta);
+  const data = res.ok ? null : await res.json().catch(() => null);
+  if (!res.ok) throw new ErrorApi(data?.mensaje ?? `Hubo un error inesperado (${res.status}).`, data?.codigo);
+  return res.blob();
 }

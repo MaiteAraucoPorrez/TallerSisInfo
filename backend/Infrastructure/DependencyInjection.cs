@@ -76,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<IActividadRepository, ActividadRepository>();
         services.AddScoped<ISancionRepository, SancionRepository>();
         services.AddScoped<IPurgaRepository, PurgaRepository>();
+        services.AddScoped<IEventoRepository, EventoRepository>();
         services.AddScoped<ITransaccion, TransaccionEf>();
         services.AddSingleton<IConvertidorPdf, ConvertidorPdf>();
 

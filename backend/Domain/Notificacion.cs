@@ -6,6 +6,9 @@ public class Notificacion
     public const string TipoDespuesDeClases = "DESPUES_DE_CLASES";
     public const string TipoInvitacionComunidad = "INVITACION_COMUNIDAD";
     public const string TipoComunidadCerrada = "COMUNIDAD_CERRADA";
+    public const string TipoEventoAprobado = "EVENTO_APROBADO";
+    public const string TipoEventoRechazado = "EVENTO_RECHAZADO";
+    public const string TipoEventoBajado = "EVENTO_BAJADO";
     /// <summary>HU28: aviso al estudiante por una advertencia. La suspensión y la baja no notifican.</summary>
     public const string TipoSancionAdvertencia = "SANCION_ADVERTENCIA";
     /// <summary>HU27: un administrador resolvió o descartó un reporte tuyo (con su respuesta, recortada).</summary>
@@ -19,6 +22,7 @@ public class Notificacion
     public int UsuarioId { get; set; }
     public string Tipo { get; set; } = "";
     public int? ComunidadId { get; set; }
+    public int? EventoId { get; set; }
     /// <summary>Solo en REPORTE_RESUELTO: el reporte al que apunta el aviso.</summary>
     public int? ReporteId { get; set; }
     /// <summary>Solo en SANCION_ADVERTENCIA: la sanción a la que apunta el aviso.</summary>

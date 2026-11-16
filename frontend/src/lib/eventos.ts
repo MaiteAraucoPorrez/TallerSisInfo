@@ -20,6 +20,27 @@ export type LecturaFlyer = {
   imagen: ImagenFlyer | null;
 };
 
+export type LugarEvento = { id: number; nombre: string };
+export type EventoCampus = {
+  id: number;
+  titulo: string;
+  descripcion: string | null;
+  inicio: string;
+  fin: string;
+  lugarId: number | null;
+  lugar: string;
+  estado: "PENDIENTE" | "PUBLICADO" | "RECHAZADO" | "CANCELADO";
+  origen: "FORMULARIO" | "ADMIN";
+  asistencia: "FIJA" | "LIBRE";
+  visitaMin: number | null;
+  visitaMax: number | null;
+  motivo: string | null;
+  fotoUrl: string | null;
+  createdAt: string;
+};
+
+export type DecidirEvento = { estado: "PUBLICADO" | "RECHAZADO"; motivo?: string | null };
+
 /** HU24: lee un afiche (JPG, PNG, PDF) o un texto pegado. No crea nada: solo devuelve el borrador. */
 export function leerFlyer(entrada: File | string): Promise<LecturaFlyer> {
   const datos = new FormData();
@@ -27,3 +48,17 @@ export function leerFlyer(entrada: File | string): Promise<LecturaFlyer> {
   else datos.append("archivo", entrada);
   return pedirApi<LecturaFlyer>("/api/eventos/extraer", { method: "POST", body: datos });
 }
+
+export const listarLugaresEventos = () => pedirApi<LugarEvento[]>("/api/eventos/lugares");
+export const listarMisEventos = () => pedirApi<EventoCampus[]>("/api/eventos/mios");
+export const crearEvento = (datos: FormData) => pedirApi<EventoCampus>("/api/eventos", { method: "POST", body: datos });
+export const actualizarEvento = (id: number, datos: FormData) =>
+  pedirApi<EventoCampus>(`/api/eventos/${id}`, { method: "PUT", body: datos });
+export const cancelarEvento = (id: number) =>
+  pedirApi<EventoCampus>(`/api/eventos/${id}/cancelar`, { method: "PATCH" });
+export const listarEventosPendientes = () => pedirApi<EventoCampus[]>("/api/admin/eventos/pendientes");
+export const moderarEvento = (id: number, decision: DecidirEvento) =>
+  pedirApi<void>(`/api/admin/eventos/${id}/moderacion`, {
+    method: "PATCH",
+    body: JSON.stringify(decision),
+  });

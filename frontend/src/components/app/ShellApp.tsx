@@ -29,6 +29,7 @@ const SECCIONES = [
   { ruta: "/recomendaciones", nombre: "Recomendaciones", corto: "Para ti", Icono: IconoDestello },
   { ruta: "/campus", nombre: "Campus", corto: "Campus", Icono: IconoBrujula },
   { ruta: "/comunidades", nombre: "Comunidades", corto: "Grupos", Icono: IconoPersonas },
+  { ruta: "/eventos", nombre: "Eventos", corto: "Eventos", Icono: IconoCalendario },
   { ruta: "/perfil", nombre: "Perfil", corto: "Perfil", Icono: IconoPersona },
 ];
 

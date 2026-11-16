@@ -8,7 +8,7 @@ import { Logo } from "@/components/auth/Iconos";
 import Notificaciones from "@/components/notificaciones/Notificaciones";
 import { iniciales } from "@/lib/iniciales";
 import { Sesion, cerrarSesion } from "@/services/authService";
-import { IconoAjustes, IconoInicio, IconoSalir } from "./Iconos";
+import { IconoAjustes, IconoCalendario, IconoInicio, IconoSalir } from "./Iconos";
 import estilos from "./ShellAdmin.module.css";
 
 const RESORTE = { type: "spring", bounce: 0.18, duration: 0.45 } as const;
@@ -16,6 +16,7 @@ const RESORTE = { type: "spring", bounce: 0.18, duration: 0.45 } as const;
 const SECCIONES = [
   { ruta: "/admin/inicio", nombre: "Inicio", Icono: IconoInicio },
   { ruta: "/admin", nombre: "Panel Admin", Icono: IconoAjustes },
+  { ruta: "/admin/eventos", nombre: "Eventos", Icono: IconoCalendario },
 ];
 
 export default function ShellAdmin({ sesion, children }: { sesion: Sesion; children: React.ReactNode }) {

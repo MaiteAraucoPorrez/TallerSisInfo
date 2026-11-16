@@ -15,6 +15,7 @@ public class NotificacionConfiguration : IEntityTypeConfiguration<Notificacion>
         builder.Property(n => n.UsuarioId).HasColumnName("usuario_id");
         builder.Property(n => n.Tipo).HasColumnName("tipo").HasMaxLength(25).IsRequired();
         builder.Property(n => n.ComunidadId).HasColumnName("comunidad_id");
+        builder.Property(n => n.EventoId).HasColumnName("evento_id");
         builder.Property(n => n.ReporteId).HasColumnName("reporte_id");
         builder.Property(n => n.SancionId).HasColumnName("sancion_id");
         builder.Property(n => n.ConexionId).HasColumnName("conexion_id");
@@ -27,6 +28,8 @@ public class NotificacionConfiguration : IEntityTypeConfiguration<Notificacion>
         builder.Property(n => n.CreatedAt).HasColumnName("created_at").HasColumnType("datetime(6)");
 
         builder.HasIndex(n => new { n.UsuarioId, n.PuenteFecha, n.PuenteHoraInicio }).IsUnique().HasDatabaseName("uq_notif_puente");
+        builder.HasIndex(n => new { n.UsuarioId, n.EventoId, n.Tipo }).IsUnique().HasDatabaseName("uq_notif_evento");
         builder.HasOne<Usuario>().WithMany().HasForeignKey(n => n.UsuarioId);
+        builder.HasOne<Evento>().WithMany().HasForeignKey(n => n.EventoId).OnDelete(DeleteBehavior.Restrict);
     }
 }
