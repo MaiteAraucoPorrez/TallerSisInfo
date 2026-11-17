@@ -38,6 +38,8 @@ const MENSAJES = ["Leyendo el afiche…", "Buscando título, fecha y lugar…", 
 export type BorradorFlyer = {
   consultaId: number;
   estado: EstadoFlyer;
+  /** Explicación del servidor (p. ej. la imagen se ve borrosa); null si no hay. */
+  mensaje: string | null;
   evento: BorradorEvento;
   faltantes: string[];
   advertencias: string[];
@@ -158,6 +160,7 @@ export default function SubirFlyer({ onCerrar, onBorrador, onLlenarAMano }: Prop
     onBorrador({
       consultaId: lectura.consultaId,
       estado: lectura.estado,
+      mensaje: lectura.mensaje,
       evento: lectura.evento,
       faltantes: [...camposFaltantes(lectura.faltantes, lectura.evento)],
       advertencias: lectura.advertencias,

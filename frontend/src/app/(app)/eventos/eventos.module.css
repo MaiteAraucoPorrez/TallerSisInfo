@@ -177,6 +177,51 @@
   line-height: 1.5;
 }
 
+/* HU24 parte 2: avisos del afiche y campos que la IA no pudo leer. */
+.aviso {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--ucb-amarillo);
+  border-radius: 14px;
+  background: #fff7d6;
+  color: var(--ucb-marino);
+  line-height: 1.45;
+}
+
+.aviso ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.falta {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 9px;
+  border: 1px solid var(--error-borde);
+  border-radius: 999px;
+  background: var(--error-fondo);
+  color: var(--error-texto);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.campo input[aria-invalid="true"],
+.campo select[aria-invalid="true"] {
+  border-color: var(--error-borde);
+  box-shadow: 0 0 0 3px var(--error-fondo);
+}
+
+.grupo[aria-invalid="true"] {
+  border-color: var(--error-borde);
+  box-shadow: 0 0 0 3px var(--error-fondo);
+}
+
+.accionesFoto {
+  display: flex;
+  margin-top: -8px;
+}
+
 .grupo {
   display: grid;
   gap: 12px;

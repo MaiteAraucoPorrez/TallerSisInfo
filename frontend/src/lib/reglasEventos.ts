@@ -7,7 +7,8 @@ export type CamposFormularioEvento = {
   fin: string;
   lugarId: string;
   lugarTexto: string;
-  asistencia: "FIJA" | "LIBRE";
+  /** «» = sin elegir (un borrador de flyer sin asistencia leída): hay que elegirla antes de enviar. */
+  asistencia: "FIJA" | "LIBRE" | "";
   visitaMin: string;
   visitaMax: string;
 };
@@ -19,6 +20,7 @@ export function validarFormularioEvento(campos: CamposFormularioEvento): string 
   if (!campos.fin) return "Indica la fecha y hora de fin.";
   if (!campos.lugarId && !campos.lugarTexto.trim()) return "Elige un lugar o escribe dónde será el evento.";
   if (campos.lugarTexto.trim().length > 150) return "El lugar no puede superar 150 caracteres.";
+  if (campos.asistencia === "") return "Elige si hay que llegar a la hora o si se puede pasar un rato.";
 
   if (campos.asistencia === "LIBRE") {
     const minimo = Number(campos.visitaMin);
@@ -56,8 +58,11 @@ export function formDataEvento(
   campos: CamposFormularioEvento & { descripcion: string },
   foto: File | null,
   nombreLugarSeleccionado?: string,
+  /** Solo al crear: FLYER si el formulario salió de un borrador de afiche. Al editar no se envía. */
+  origen?: "FORMULARIO" | "FLYER",
 ): FormData {
   const datos = new FormData();
+  if (origen) datos.set("Origen", origen);
   datos.set("Titulo", campos.titulo.trim());
   datos.set("Descripcion", campos.descripcion.trim());
   datos.set("Inicio", fechaBoliviaParaApi(campos.inicio));
