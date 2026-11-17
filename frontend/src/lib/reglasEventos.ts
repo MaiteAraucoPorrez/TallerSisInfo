@@ -60,9 +60,12 @@ export function formDataEvento(
   nombreLugarSeleccionado?: string,
   /** Solo al crear: FLYER si el formulario salió de un borrador de afiche. Al editar no se envía. */
   origen?: "FORMULARIO" | "FLYER",
+  /** Solo al editar: true pide borrar la foto actual del evento (no se envía junto con una foto nueva). */
+  quitarFoto = false,
 ): FormData {
   const datos = new FormData();
   if (origen) datos.set("Origen", origen);
+  if (quitarFoto && !foto) datos.set("QuitarFoto", "true");
   datos.set("Titulo", campos.titulo.trim());
   datos.set("Descripcion", campos.descripcion.trim());
   datos.set("Inicio", fechaBoliviaParaApi(campos.inicio));

@@ -4,6 +4,18 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SubirFlyer, { BorradorFlyer } from "@/components/eventos/SubirFlyer";
 import FotoEvento from "@/components/eventos/FotoEvento";
+import VistaPreviaFoto from "@/components/eventos/VistaPreviaFoto";
+import {
+  EstadoFoto,
+  FOTO_SIN_TOCAR,
+  accionesFoto,
+  archivoNuevo,
+  datosDeFoto,
+  deshacerQuitar,
+  elegirFoto,
+  quitarFotoActual,
+  vistaFoto,
+} from "@/lib/reglasFotoEvento";
 import { Entrada, Pieza } from "@/components/app/Movimiento";
 import { ErrorApi } from "@/lib/api";
 import { prepararFotoDelBorrador } from "@/lib/fotoEvento";
@@ -63,7 +75,12 @@ export default function EventosPage() {
   const [campos, setCampos] = useState<Campos>(CAMPOS_VACIOS);
   const [lugares, setLugares] = useState<LugarEvento[]>([]);
   const [eventos, setEventos] = useState<EventoCampus[]>([]);
-  const [foto, setFoto] = useState<File | null>(null);
+  // Foto del formulario: sin tocar, una nueva elegida, o (solo al editar) la actual marcada para quitar.
+  const [estadoFoto, setEstadoFoto] = useState<EstadoFoto<File>>(FOTO_SIN_TOCAR);
+  // Al editar: ruta de la foto que el evento ya tiene (null si no tiene).
+  const [fotoActual, setFotoActual] = useState<string | null>(null);
+  const foto = archivoNuevo(estadoFoto);
+  const setFoto = (archivo: File | null) => setEstadoFoto(elegirFoto(archivo));
   const [editando, setEditando] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [ahora, setAhora] = useState(0);
@@ -129,6 +146,7 @@ export default function EventosPage() {
   function limpiarFormulario() {
     setCampos(CAMPOS_VACIOS);
     quitarFoto();
+    setFotoActual(null);
     setEditando(null);
     setDesdeFlyer(false);
     setMarcados([]);
@@ -157,7 +175,8 @@ export default function EventosPage() {
     try {
       const nombreLugar = lugares.find((l) => String(l.id) === campos.lugarId)?.nombre;
       const origen = editando !== null ? undefined : desdeFlyer ? "FLYER" : "FORMULARIO";
-      const datos = formDataEvento(campos, foto, nombreLugar, origen);
+      const { foto: fotoNueva, quitarFoto: pedirQuitarFoto } = datosDeFoto(estadoFoto);
+      const datos = formDataEvento(campos, fotoNueva, nombreLugar, origen, pedirQuitarFoto);
       const resultado = editando === null
         ? await crearEvento(datos)
         : await actualizarEvento(editando, datos);
@@ -169,6 +188,11 @@ export default function EventosPage() {
             : `El evento se guardó con estado: ${ETIQUETAS_ESTADO[resultado.estado].toLowerCase()}.`,
       );
       if (resultado.estado === "PUBLICADO") limpiarFormulario();
+      else if (editando !== null) {
+        // el formulario sigue en edición: ahora la foto actual es la que quedó guardada
+        setFotoActual(resultado.fotoUrl);
+        quitarFoto();
+      }
       setPestana("mios");
       try {
         setEventos(await listarMisEventos());
@@ -195,6 +219,7 @@ export default function EventosPage() {
       visitaMax: evento.visitaMax === null ? "" : String(evento.visitaMax),
     });
     quitarFoto();
+    setFotoActual(evento.fotoUrl);
     setDesdeFlyer(false);
     setMarcados([]);
     setAvisos([]);
@@ -225,6 +250,7 @@ export default function EventosPage() {
     const { campos: nuevos, marcados: porCompletar } = borradorACampos(borrador.evento, borrador.faltantes, lugares);
     const imagen = borrador.archivo ?? imagenDelFlyer(borrador);
     quitarFoto();
+    setFotoActual(null); // un borrador siempre crea un evento nuevo
     const turno = turnoFoto.current;
     setCampos(nuevos);
     setMarcados(porCompletar);
@@ -248,6 +274,8 @@ export default function EventosPage() {
     if (preparada.aviso) setAvisos((actuales) => [...actuales, preparada.aviso as string]);
   }
 
+  const vistaDeFoto = vistaFoto(estadoFoto, fotoActual !== null);
+  const accionesDeFoto = accionesFoto(estadoFoto, fotoActual !== null);
   const seleccion = lugares.find((l) => String(l.id) === campos.lugarId);
   const faltan = camposQueFaltan(marcados, campos);
   const avisoLugar = desdeFlyer && editando === null ? avisoLugarFueraDelCatalogo(campos) : null;
@@ -370,15 +398,30 @@ export default function EventosPage() {
               </div>
             )}
 
+            {vistaDeFoto === "actual" && fotoActual && (
+              <figure className={estilos.fotoVista}>
+                <figcaption>Foto actual del evento</figcaption>
+                <FotoEvento ruta={fotoActual} titulo={campos.titulo || "el evento"} />
+              </figure>
+            )}
+            {vistaDeFoto === "nueva" && foto && (
+              <figure className={estilos.fotoVista}>
+                <figcaption>{editando === null ? "Foto del evento" : "Foto nueva (se guardará al guardar los cambios)"}</figcaption>
+                <VistaPreviaFoto archivo={foto} titulo={campos.titulo || "el evento"} />
+              </figure>
+            )}
+            {vistaDeFoto === "quitada" && <p className={estilos.aviso} role="status">La foto actual se quitará al guardar los cambios.</p>}
+            {editando !== null && vistaDeFoto === "ninguna" && <p className={estilos.ayudaFoto}>Este evento todavía no tiene foto.</p>}
+
             <label className={estilos.campo}>
-              <span>Foto <small>(opcional; JPG o PNG, hasta 2 MB)</small></span>
+              <span>{editando === null ? "Foto" : "Cambiar foto"} <small>(opcional; JPG o PNG, hasta 2 MB)</small></span>
               <input key={claveFoto} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(e) => {
                 turnoFoto.current += 1; // lo que el estudiante elige gana sobre la foto del afiche que se esté preparando
                 setPreparandoFoto(false);
                 const archivo = e.target.files?.[0] ?? null;
                 const problema = archivo ? validarFotoEvento(archivo) : null;
                 if (problema) {
-                  setFoto(null);
+                  if (editando === null) setFoto(null); // al editar se conserva lo que ya estaba decidido
                   setError(problema);
                   e.target.value = "";
                   return;
@@ -389,9 +432,19 @@ export default function EventosPage() {
               {preparandoFoto && <small className={estilos.ayuda}>Preparando la foto del afiche…</small>}
               {foto && <small className={estilos.ayuda}>{foto.name} · {(foto.size / 1024).toFixed(0)} KB de {FOTO_EVENTO_MAX_BYTES / 1024} KB</small>}
             </label>
-            {foto && (
+            {(accionesDeFoto.quitar || accionesDeFoto.descartarNueva || accionesDeFoto.deshacer) && (
               <div className={estilos.accionesFoto}>
-                <button type="button" className={estilos.botonSecundario} disabled={guardando} onClick={quitarFoto}>Quitar foto</button>
+                {accionesDeFoto.quitar && (
+                  <button type="button" className={estilos.botonSecundario} disabled={guardando} onClick={() => setEstadoFoto(quitarFotoActual(estadoFoto))}>Quitar foto</button>
+                )}
+                {accionesDeFoto.descartarNueva && (
+                  <button type="button" className={estilos.botonSecundario} disabled={guardando} onClick={quitarFoto}>
+                    {editando === null ? "Quitar foto" : "Descartar la foto nueva"}
+                  </button>
+                )}
+                {accionesDeFoto.deshacer && (
+                  <button type="button" className={estilos.botonSecundario} disabled={guardando} onClick={() => setEstadoFoto(deshacerQuitar(estadoFoto))}>Deshacer</button>
+                )}
               </div>
             )}
 

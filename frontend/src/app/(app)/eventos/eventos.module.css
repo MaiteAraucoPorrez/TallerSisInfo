@@ -219,7 +219,25 @@
 
 .accionesFoto {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: -8px;
+}
+
+/* Edición: vista previa de la foto actual o de la nueva. */
+.fotoVista {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  max-width: 420px;
+}
+
+.fotoVista figcaption,
+.ayudaFoto {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .grupo {
