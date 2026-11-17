@@ -1,6 +1,26 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PRESENTACION_GENERICA, presentacionNotificacion } from "./reglasNotificaciones.ts";
+import { PRESENTACION_GENERICA, bandejaVacia, presentacionNotificacion, rutaNotificacion } from "./reglasNotificaciones.ts";
+
+test("los avisos del admin tienen su presentación y llevan a donde se resuelven", () => {
+  assert.equal(presentacionNotificacion("REPORTE_NUEVO").titulo, "Nuevo reporte");
+  assert.equal(presentacionNotificacion("EVENTO_POR_REVISAR").icono, "calendario");
+  assert.equal(rutaNotificacion({ tipo: "REPORTE_NUEVO", reporteId: 4 }), "/admin?pestana=reportes");
+  assert.equal(rutaNotificacion({ tipo: "EVENTO_POR_REVISAR" }), "/admin/eventos");
+});
+
+test("los avisos del estudiante conservan su destino", () => {
+  assert.equal(rutaNotificacion({ tipo: "PUENTE_DISPONIBLE", duracionMinutos: 60 }), "/recomendaciones?min=60");
+  assert.equal(rutaNotificacion({ tipo: "INVITACION_COMUNIDAD", comunidadId: 7 }), "/comunidades?pestana=descubrir&comunidad=7");
+  assert.equal(rutaNotificacion({ tipo: "EVENTO_APROBADO" }), "/eventos?pestana=mios");
+  assert.equal(rutaNotificacion({ tipo: "SANCION_ADVERTENCIA" }), null);
+});
+
+test("la bandeja vacía explica «Sin leer» y le habla al admin de lo suyo", () => {
+  assert.equal(bandejaVacia("sin-leer", false).titulo, "Ya leíste todo");
+  assert.match(bandejaVacia("todas", true).detalle, /reporte/);
+  assert.match(bandejaVacia("todas", false).detalle, /puentes/);
+});
 
 test("un evento aprobado se muestra con su título, ícono de calendario y estilo de éxito", () => {
   assert.deepEqual(presentacionNotificacion("EVENTO_APROBADO"), {

@@ -1,3 +1,5 @@
+import { enlaceMisReportes } from "./reglasReportes.ts";
+
 // Cómo se ve cada tipo de notificación en la campana. Función pura, sin React, para poder probarla.
 // Un tipo que la campana no conoce (por ejemplo uno que agregue otra HU) usa una presentación genérica
 // en vez de romper el panel.
@@ -26,6 +28,9 @@ const PRESENTACIONES: Record<string, PresentacionNotificacion> = {
   // HU23: el administrador revisó un evento pendiente. Lleva a «Mis eventos».
   EVENTO_APROBADO: { titulo: "Tu evento fue aprobado", clase: "reporte", icono: "calendario" },
   EVENTO_RECHAZADO: { titulo: "Tu evento fue rechazado", clase: "advertencia", icono: "calendario" },
+  // Campanita del admin: algo espera su decisión. Llevan a la pestaña o pantalla donde se resuelve.
+  REPORTE_NUEVO: { titulo: "Nuevo reporte", clase: "reporte", icono: "bandera" },
+  EVENTO_POR_REVISAR: { titulo: "Evento por revisar", clase: "invitacion", icono: "calendario" },
 };
 
 export const PRESENTACION_GENERICA: PresentacionNotificacion = {
@@ -36,4 +41,48 @@ export const PRESENTACION_GENERICA: PresentacionNotificacion = {
 
 export function presentacionNotificacion(tipo: string): PresentacionNotificacion {
   return Object.hasOwn(PRESENTACIONES, tipo) ? PRESENTACIONES[tipo] : PRESENTACION_GENERICA;
+}
+
+type AvisoConDestino = {
+  tipo: string;
+  duracionMinutos?: number | null;
+  comunidadId?: number | null;
+  reporteId?: number | null;
+};
+
+/** A dónde lleva «Ver» (o «Revisar», en el admin). `null` = el aviso no lleva a ninguna pantalla. */
+export function rutaNotificacion(n: AvisoConDestino): string | null {
+  switch (n.tipo) {
+    case "SANCION_ADVERTENCIA":
+      return null;
+    case "REPORTE_NUEVO":
+      return "/admin?pestana=reportes";
+    case "EVENTO_POR_REVISAR":
+      return "/admin/eventos";
+    case "REPORTE_RESUELTO":
+      return enlaceMisReportes(n.reporteId);
+    case "EVENTO_APROBADO":
+    case "EVENTO_RECHAZADO":
+      return "/eventos?pestana=mios";
+    case "CONEXION_SOLICITADA":
+    case "CONEXION_ACEPTADA":
+      return "/comunidades?pestana=libres";
+    case "PUENTE_DISPONIBLE":
+    case "DESPUES_DE_CLASES":
+      return n.duracionMinutos ? `/recomendaciones?min=${n.duracionMinutos}` : "/recomendaciones";
+    default:
+      return n.comunidadId ? `/comunidades?pestana=descubrir&comunidad=${n.comunidadId}` : "/comunidades?pestana=descubrir";
+  }
+}
+
+/** Texto de la bandeja vacía: distinto si es la pestaña «Sin leer» y si quien mira es el administrador. */
+export function bandejaVacia(filtro: "todas" | "sin-leer", admin: boolean): { titulo: string; detalle: string } {
+  if (filtro === "sin-leer")
+    return {
+      titulo: "Ya leíste todo",
+      detalle: "Cada aviso nuevo aparece aquí hasta que lo abras o lo marques como leído.",
+    };
+  return admin
+    ? { titulo: "Sin avisos por ahora", detalle: "Te avisaremos cuando un estudiante envíe un reporte o un evento espere tu revisión." }
+    : { titulo: "Sin avisos por ahora", detalle: "Te avisaremos en cuanto empiece uno de tus puentes." };
 }

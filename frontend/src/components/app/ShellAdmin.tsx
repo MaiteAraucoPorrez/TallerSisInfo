@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Logo } from "@/components/auth/Iconos";
 import Notificaciones from "@/components/notificaciones/Notificaciones";
 import { iniciales } from "@/lib/iniciales";
@@ -12,6 +12,14 @@ import { IconoAjustes, IconoCalendario, IconoInicio, IconoSalir } from "./Iconos
 import estilos from "./ShellAdmin.module.css";
 
 const RESORTE = { type: "spring", bounce: 0.18, duration: 0.45 } as const;
+
+// Una sola campanita a la vez (la de la barra lateral o la de la barra de arriba): si no, cada aviso nuevo saldría dos veces.
+const ESCRITORIO = "(min-width: 1025px)";
+const seguirAncho = (avisar: () => void) => {
+  const consulta = window.matchMedia(ESCRITORIO);
+  consulta.addEventListener("change", avisar);
+  return () => consulta.removeEventListener("change", avisar);
+};
 
 const SECCIONES = [
   { ruta: "/admin/inicio", nombre: "Inicio", Icono: IconoInicio },
@@ -24,6 +32,7 @@ export default function ShellAdmin({ sesion, children }: { sesion: Sesion; child
   const router = useRouter();
   const activa = (ruta: string) => pathname === ruta || (ruta !== "/admin" && pathname.startsWith(`${ruta}/`));
   const fueraDeAdmin = !pathname.startsWith("/admin");
+  const escritorio = useSyncExternalStore(seguirAncho, () => window.matchMedia(ESCRITORIO).matches, () => true);
 
   useEffect(() => {
     if (fueraDeAdmin) router.replace("/admin/inicio");
@@ -64,7 +73,7 @@ export default function ShellAdmin({ sesion, children }: { sesion: Sesion; child
 
         <div className={estilos.pie}>
           <div className={estilos.filaAvisos}>
-            <Notificaciones recarga={0} />
+            {escritorio && <Notificaciones recarga={0} admin />}
             <span>Notificaciones</span>
           </div>
           <div className={estilos.usuario}>
@@ -94,7 +103,7 @@ export default function ShellAdmin({ sesion, children }: { sesion: Sesion; child
           <span className={estilos.etiqueta}>Admin</span>
         </Link>
         <div className={estilos.acciones}>
-          <Notificaciones recarga={0} />
+          {!escritorio && <Notificaciones recarga={0} admin />}
           <button type="button" className={estilos.salirMovil} onClick={salir} aria-label="Cerrar sesión">
             <IconoSalir tamano={18} />
           </button>
