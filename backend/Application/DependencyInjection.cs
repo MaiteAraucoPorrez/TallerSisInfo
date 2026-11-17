@@ -50,7 +50,8 @@ public static class DependencyInjection
         // Admin y reportes
         services.AddScoped<AdminService>();
         services.AddScoped<ReporteService>();
-        services.AddScoped<EventoService>();
+        services.AddScoped(sp => new EventoService(
+            sp.GetRequiredService<IEventoRepository>(), TimeProvider.System, sp.GetRequiredService<IAvisosAdmin>()));
         services.AddScoped<EventosEnPuenteService>();
 
         // Actividades y comunidades (HU10, HU11, HU13, HU14, HU15)
@@ -87,6 +88,9 @@ public static class DependencyInjection
 
         // Tiempo real (HU18): a quién avisar. El canal (SignalR) lo registra Presentation.
         services.AddScoped<ITiempoReal, TiempoRealService>();
+
+        // Campanita del admin: reportes nuevos y eventos por revisar.
+        services.AddScoped<IAvisosAdmin, AvisosAdminService>();
 
         return services;
     }

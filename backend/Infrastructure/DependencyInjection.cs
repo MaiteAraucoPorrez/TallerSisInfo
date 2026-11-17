@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IHorarioRepository, HorarioRepository>();
         services.AddScoped<IPuenteRepository, PuenteRepository>();
         services.AddScoped<INotificacionRepository, NotificacionRepository>();
+        services.AddScoped<IAvisosAdminRepository, AvisosAdminRepository>();
         services.AddScoped<IRecomendacionRepository, RecomendacionRepository>();
         services.AddScoped<IAdminRepository, AdminRepository>();
         services.AddScoped<IEtiquetaRepository, EtiquetaRepository>();

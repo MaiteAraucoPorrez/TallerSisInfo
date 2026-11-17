@@ -600,4 +600,42 @@ public sealed class EventoServiceTests
         Assert.Equal("YA_REVISADO", repetida.Codigo);
         Assert.Equal(Evento.EstadoPublicado, Assert.Single(repo.Eventos).Estado);
     }
+
+    // ── Campanita del admin (migración 030) ──
+
+    private static (EventoService Servicio, RepositorioFalso Repo, AvisosAdminTests.AvisosFalsos Avisos) ConAvisos()
+    {
+        var repo = new RepositorioFalso();
+        var avisos = new AvisosAdminTests.AvisosFalsos();
+        return (new EventoService(repo, new RelojFijo(Ahora), avisos), repo, avisos);
+    }
+
+    [Fact]
+    public async Task Un_evento_que_queda_pendiente_avisa_a_los_admins()
+    {
+        var (servicio, _, avisos) = ConAvisos();
+        await servicio.CrearAsync(Usuario, false, Solicitud(lugarId: null, lugarTexto: "Patio lateral"), null);
+        Assert.Equal(["evento-por-revisar:1"], avisos.Llamadas);
+    }
+
+    [Fact]
+    public async Task Un_evento_publicado_no_queda_como_pendiente_para_el_admin()
+    {
+        var (servicio, _, avisos) = ConAvisos();
+        await servicio.CrearAsync(Usuario, false, Solicitud(), null);
+        Assert.DoesNotContain(avisos.Llamadas, l => l.StartsWith("evento-por-revisar"));
+    }
+
+    [Fact]
+    public async Task Moderar_o_cancelar_cierra_el_aviso_del_admin()
+    {
+        var (servicio, _, avisos) = ConAvisos();
+        var creado = await servicio.CrearAsync(Usuario, false, Solicitud(lugarId: null, lugarTexto: "Patio lateral"), null);
+        await servicio.ModerarAsync(creado.Id, new ResolverEventoRequest(Evento.EstadoPublicado, null));
+        Assert.Equal(["evento-por-revisar:1", "evento-revisado:1"], avisos.Llamadas);
+
+        var otro = await servicio.CrearAsync(Usuario, false, Solicitud(lugarId: null, lugarTexto: "Patio trasero"), null);
+        await servicio.CancelarAsync(otro.Id, Usuario);
+        Assert.Equal("evento-revisado:2", avisos.Llamadas[^1]);
+    }
 }
