@@ -21,6 +21,17 @@ export type LecturaFlyer = {
 };
 
 export type LugarEvento = { id: number; nombre: string };
+export type EventoEnPuente = {
+  id: number;
+  titulo: string;
+  inicio: string;
+  fin: string;
+  lugar: string;
+  asistencia: "FIJA" | "LIBRE";
+  minutosPuedeQuedarse: number | null;
+  explicacion: string;
+};
+
 export type EventoCampus = {
   id: number;
   titulo: string;
@@ -50,6 +61,7 @@ export function leerFlyer(entrada: File | string): Promise<LecturaFlyer> {
 }
 
 export const listarLugaresEventos = () => pedirApi<LugarEvento[]>("/api/eventos/lugares");
+export const listarEventosEnPuente = () => pedirApi<EventoEnPuente[]>("/api/eventos/en-puente");
 export const listarMisEventos = () => pedirApi<EventoCampus[]>("/api/eventos/mios");
 export const crearEvento = (datos: FormData) => pedirApi<EventoCampus>("/api/eventos", { method: "POST", body: datos });
 export const actualizarEvento = (id: number, datos: FormData) =>

@@ -6,6 +6,11 @@ public interface IEventoRepository
 {
     Task<List<Lugar>> ListarLugaresDisponiblesAsync(CancellationToken ct = default);
     Task<Lugar?> ObtenerLugarAsync(int lugarId, CancellationToken ct = default);
+    Task<List<EventoParaPuente>> ListarPublicadosHoyAsync(
+        DateTime desdeUtc,
+        DateTime hastaUtc,
+        DateTime ahoraUtc,
+        CancellationToken ct = default);
     Task<bool> CrearAsync(
         Evento evento,
         byte[]? imagen,

@@ -18,8 +18,13 @@ public sealed class EventosController : ControllerBase
 {
     private const long LimitePeticionFoto = ReglasEvento.BytesMaximosImagen + 512 * 1024;
     private readonly EventoService _service;
+    private readonly EventosEnPuenteService _eventosEnPuente;
 
-    public EventosController(EventoService service) => _service = service;
+    public EventosController(EventoService service, EventosEnPuenteService eventosEnPuente)
+    {
+        _service = service;
+        _eventosEnPuente = eventosEnPuente;
+    }
 
     private int UsuarioId =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")
@@ -35,6 +40,12 @@ public sealed class EventosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Mios(CancellationToken ct)
         => Ok(await _service.ListarMiosAsync(UsuarioId, ct));
+
+    [HttpGet("en-puente")]
+    [ProducesResponseType(typeof(List<EventoEnPuenteDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> EnPuente(CancellationToken ct)
+        => Ok(await _eventosEnPuente.ListarAsync(UsuarioId, ct));
 
     [HttpPost]
     [Consumes("multipart/form-data")]
