@@ -19,6 +19,8 @@ public static class ReglasEvento
     public const string MensajeLimiteDiario = "Ya alcanzaste el máximo de 3 eventos creados por día.";
     public const string MensajeInicioPasado = "No se puede editar ni cancelar un evento que ya empezó.";
     public const string MensajeEventoNoPendiente = "El evento ya fue revisado.";
+    public const string MensajeEventoNoEditable = "Solo se pueden editar los eventos pendientes o publicados.";
+    public const string MensajeEventoFinalizado = "El evento ya terminó, así que no se puede revisar.";
 
     private static readonly TimeSpan DesfaseBolivia = TimeSpan.FromHours(-4);
 

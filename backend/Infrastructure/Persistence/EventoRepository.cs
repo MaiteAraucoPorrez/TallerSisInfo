@@ -77,14 +77,18 @@ public sealed class EventoRepository : IEventoRepository
                 WHERE i.evento_id = {eventoId}
                 """).ToListAsync(ct)).FirstOrDefault();
 
-        return fila is null
-            ? null
-            : new FotoEvento(fila.Contenido, fila.TipoMime,
-                DateTime.SpecifyKind(fila.ActualizadaEn, DateTimeKind.Utc), fila.CreadorId, fila.Estado);
+        if (fila is null) return null;
+
+        var suspendido = await FiltrosSancion.IdsSuspendidos(_db, DateTime.UtcNow)
+            .AnyAsync(id => id == fila.CreadorId, ct);
+
+        return new FotoEvento(fila.Contenido, fila.TipoMime,
+            DateTime.SpecifyKind(fila.ActualizadaEn, DateTimeKind.Utc), fila.CreadorId, fila.Estado, suspendido);
     }
 
-    public Task<List<EventoListado>> ListarPendientesAsync(CancellationToken ct = default)
-        => ListarAsync(_db.Eventos.AsNoTracking().Where(e => e.Estado == Evento.EstadoPendiente), ct);
+    public Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default)
+        => ListarAsync(_db.Eventos.AsNoTracking()
+            .Where(e => e.Estado == Evento.EstadoPendiente && e.Fin > ahoraUtc), ct);
 
     public async Task<ResultadoModeracionEvento> ModerarAsync(
         int eventoId,
@@ -101,6 +105,7 @@ public sealed class EventoRepository : IEventoRepository
 
         var evento = await _db.Eventos.FirstAsync(e => e.Id == eventoId, ct);
         if (evento.Estado != Evento.EstadoPendiente) return ResultadoModeracionEvento.YaRevisado;
+        if (evento.Fin <= ahoraUtc) return ResultadoModeracionEvento.Finalizado;
 
         evento.Estado = estado;
         evento.Motivo = estado == Evento.EstadoRechazado ? motivo : null;

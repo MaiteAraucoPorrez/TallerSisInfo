@@ -34,7 +34,13 @@ public sealed record EventoLugarDto(int Id, string Nombre);
 
 public sealed record EventoListado(Evento Evento, string NombreLugar, DateTime? FotoActualizadaEn);
 
-public sealed record FotoEvento(byte[] Contenido, string TipoMime, DateTime ActualizadaEn, int CreadorId, string Estado);
+public sealed record FotoEvento(
+    byte[] Contenido,
+    string TipoMime,
+    DateTime ActualizadaEn,
+    int CreadorId,
+    string Estado,
+    bool CreadorSuspendido);
 
 public sealed record ResolverEventoRequest(string? Estado, string? Motivo);
 
@@ -42,5 +48,6 @@ public enum ResultadoModeracionEvento
 {
     Actualizado,
     NoEncontrado,
-    YaRevisado
+    YaRevisado,
+    Finalizado
 }

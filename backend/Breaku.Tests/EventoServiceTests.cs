@@ -20,6 +20,7 @@ public sealed class EventoServiceTests
         public List<Evento> Eventos { get; } = [];
         public List<Lugar> Lugares { get; } = [new Lugar { Id = 3, Nombre = "Biblioteca", Estado = "ACTIVO", Validado = true }];
         public Dictionary<int, (byte[] Contenido, string TipoMime, DateTime Actualizada)> Imagenes { get; } = [];
+        public HashSet<int> Suspendidos { get; } = [];
         public int VecesModerado { get; private set; }
 
         public Task<List<Lugar>> ListarLugaresDisponiblesAsync(CancellationToken ct = default)
@@ -66,11 +67,14 @@ public sealed class EventoServiceTests
             if (!Imagenes.TryGetValue(eventoId, out var imagen)) return Task.FromResult<FotoEvento?>(null);
             var evento = Eventos.Single(e => e.Id == eventoId);
             return Task.FromResult<FotoEvento?>(new FotoEvento(
-                imagen.Contenido, imagen.TipoMime, imagen.Actualizada, evento.CreadorId, evento.Estado));
+                imagen.Contenido, imagen.TipoMime, imagen.Actualizada, evento.CreadorId, evento.Estado,
+                Suspendidos.Contains(evento.CreadorId)));
         }
 
-        public Task<List<EventoListado>> ListarPendientesAsync(CancellationToken ct = default)
-            => Task.FromResult(Eventos.Where(e => e.Estado == Evento.EstadoPendiente).Select(AListado).ToList());
+        public Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default)
+            => Task.FromResult(Eventos
+                .Where(e => e.Estado == Evento.EstadoPendiente && e.Fin > ahoraUtc)
+                .Select(AListado).ToList());
 
         public Task<ResultadoModeracionEvento> ModerarAsync(
             int eventoId,
@@ -82,6 +86,7 @@ public sealed class EventoServiceTests
             var evento = Eventos.FirstOrDefault(e => e.Id == eventoId);
             if (evento is null) return Task.FromResult(ResultadoModeracionEvento.NoEncontrado);
             if (evento.Estado != Evento.EstadoPendiente) return Task.FromResult(ResultadoModeracionEvento.YaRevisado);
+            if (evento.Fin <= ahoraUtc) return Task.FromResult(ResultadoModeracionEvento.Finalizado);
             evento.Estado = estado;
             evento.Motivo = motivo;
             evento.UpdatedAt = ahoraUtc;
@@ -231,6 +236,122 @@ public sealed class EventoServiceTests
         iniciada.Inicio = Ahora.UtcDateTime.AddMinutes(-1);
         var tarde = await Assert.ThrowsAsync<ReglaNegocioException>(() => servicio.CancelarAsync(creada.Id, Usuario));
         Assert.Equal("EVENTO_INICIADO", tarde.Codigo);
+    }
+
+    [Theory]
+    [InlineData(Evento.EstadoRechazado)]
+    [InlineData(Evento.EstadoCancelado)]
+    public async Task Un_evento_rechazado_o_cancelado_no_se_puede_editar(string estado)
+    {
+        var (servicio, repo) = CrearServicio();
+        repo.Eventos.Add(new Evento
+        {
+            Id = 1,
+            CreadorId = Usuario,
+            Titulo = "Original",
+            Estado = estado,
+            LugarId = 3,
+            CreatedAt = Ahora.UtcDateTime,
+            UpdatedAt = Ahora.UtcDateTime,
+            Inicio = Ahora.UtcDateTime.AddDays(1),
+            Fin = Ahora.UtcDateTime.AddDays(1).AddHours(1)
+        });
+
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(1, Usuario, Solicitud(titulo: "Cambiado"), null));
+
+        Assert.Equal("EVENTO_NO_EDITABLE", error.Codigo);
+        var evento = Assert.Single(repo.Eventos);
+        Assert.Equal("Original", evento.Titulo);
+        Assert.Equal(estado, evento.Estado);
+    }
+
+    [Theory]
+    [InlineData(Evento.EstadoPendiente)]
+    [InlineData(Evento.EstadoPublicado)]
+    public async Task Un_evento_pendiente_o_publicado_se_puede_editar_y_queda_publicado(string estado)
+    {
+        var (servicio, repo) = CrearServicio();
+        repo.Eventos.Add(new Evento
+        {
+            Id = 1,
+            CreadorId = Usuario,
+            Titulo = "Original",
+            Estado = estado,
+            LugarId = 3,
+            CreatedAt = Ahora.UtcDateTime,
+            UpdatedAt = Ahora.UtcDateTime,
+            Inicio = Ahora.UtcDateTime.AddDays(1),
+            Fin = Ahora.UtcDateTime.AddDays(1).AddHours(1)
+        });
+
+        var dto = await servicio.ActualizarAsync(1, Usuario, Solicitud(titulo: "Cambiado"), null);
+
+        Assert.Equal("Cambiado", dto.Titulo);
+        Assert.Equal(Evento.EstadoPublicado, dto.Estado);
+    }
+
+    [Fact]
+    public async Task Los_pendientes_vencidos_no_se_listan_ni_se_pueden_aprobar()
+    {
+        var (servicio, repo) = CrearServicio();
+        repo.Eventos.Add(new Evento
+        {
+            Id = 1,
+            CreadorId = Usuario,
+            Titulo = "Vencido",
+            Estado = Evento.EstadoPendiente,
+            LugarId = 3,
+            CreatedAt = Ahora.UtcDateTime,
+            UpdatedAt = Ahora.UtcDateTime,
+            Inicio = Ahora.UtcDateTime.AddHours(-2),
+            Fin = Ahora.UtcDateTime.AddHours(-1)
+        });
+        repo.Eventos.Add(new Evento
+        {
+            Id = 2,
+            CreadorId = Usuario,
+            Titulo = "Vigente",
+            Estado = Evento.EstadoPendiente,
+            LugarId = 3,
+            CreatedAt = Ahora.UtcDateTime,
+            UpdatedAt = Ahora.UtcDateTime,
+            Inicio = Ahora.UtcDateTime.AddHours(1),
+            Fin = Ahora.UtcDateTime.AddHours(2)
+        });
+
+        var pendientes = await servicio.ListarPendientesAsync();
+
+        Assert.Equal("Vigente", Assert.Single(pendientes).Titulo);
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ModerarAsync(1, new ResolverEventoRequest(Evento.EstadoPublicado, null)));
+        Assert.Equal("EVENTO_FINALIZADO", error.Codigo);
+        Assert.Equal(Evento.EstadoPendiente, repo.Eventos.Single(e => e.Id == 1).Estado);
+    }
+
+    [Fact]
+    public async Task La_foto_de_un_creador_suspendido_se_oculta_a_los_demas_pero_no_al_dueno_ni_al_admin()
+    {
+        var (servicio, repo) = CrearServicio();
+        repo.Eventos.Add(new Evento
+        {
+            Id = 1,
+            CreadorId = Usuario,
+            Estado = Evento.EstadoPublicado,
+            LugarId = 3,
+            CreatedAt = Ahora.UtcDateTime,
+            UpdatedAt = Ahora.UtcDateTime,
+            Inicio = Ahora.UtcDateTime.AddDays(1),
+            Fin = Ahora.UtcDateTime.AddDays(1).AddHours(1)
+        });
+        repo.Imagenes[1] = ([0xFF, 0xD8, 0xFF], "image/jpeg", Ahora.UtcDateTime);
+        repo.Suspendidos.Add(Usuario);
+
+        Assert.NotNull(await servicio.ObtenerImagenAsync(1, Usuario, false));
+        Assert.NotNull(await servicio.ObtenerImagenAsync(1, 99, true));
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ObtenerImagenAsync(1, 99, false));
+        Assert.Equal("NO_ENCONTRADO", error.Codigo);
     }
 
     [Fact]

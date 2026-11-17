@@ -94,6 +94,8 @@ public sealed class EventoService
         var evento = await _repository.ObtenerMioAsync(eventoId, usuarioId, ct)
                      ?? throw new ReglaNegocioException("NO_ENCONTRADO", "El evento no existe.");
         var ahora = _reloj.GetUtcNow();
+        if (evento.Estado is not (Evento.EstadoPendiente or Evento.EstadoPublicado))
+            throw new ReglaNegocioException("EVENTO_NO_EDITABLE", ReglasEvento.MensajeEventoNoEditable);
         if (evento.Inicio <= ahora.UtcDateTime)
             throw new ReglaNegocioException("EVENTO_INICIADO", ReglasEvento.MensajeInicioPasado);
 
@@ -160,13 +162,14 @@ public sealed class EventoService
     {
         var foto = await _repository.ObtenerImagenAsync(eventoId, ct)
                    ?? throw new ReglaNegocioException("NO_ENCONTRADO", "El evento no tiene foto.");
-        if (!esAdmin && foto.CreadorId != usuarioId && foto.Estado != Evento.EstadoPublicado)
+        if (!esAdmin && foto.CreadorId != usuarioId
+            && (foto.Estado != Evento.EstadoPublicado || foto.CreadorSuspendido))
             throw new ReglaNegocioException("NO_ENCONTRADO", "El evento no tiene foto.");
         return foto;
     }
 
     public async Task<List<EventoDto>> ListarPendientesAsync(CancellationToken ct = default)
-        => (await _repository.ListarPendientesAsync(ct))
+        => (await _repository.ListarPendientesAsync(_reloj.GetUtcNow().UtcDateTime, ct))
             .Select(ADto)
             .ToList();
 
@@ -188,6 +191,8 @@ public sealed class EventoService
             throw new ReglaNegocioException("NO_ENCONTRADO", "El evento no existe.");
         if (resultado == ResultadoModeracionEvento.YaRevisado)
             throw new ReglaNegocioException("YA_REVISADO", ReglasEvento.MensajeEventoNoPendiente);
+        if (resultado == ResultadoModeracionEvento.Finalizado)
+            throw new ReglaNegocioException("EVENTO_FINALIZADO", ReglasEvento.MensajeEventoFinalizado);
     }
 
     private async Task<Lugar?> ResolverLugarAsync(int? lugarId, string? lugarTexto, CancellationToken ct)
