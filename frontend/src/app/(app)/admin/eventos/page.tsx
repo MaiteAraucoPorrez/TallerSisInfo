@@ -6,6 +6,7 @@ import { Entrada, Pieza } from "@/components/app/Movimiento";
 import { ErrorApi } from "@/lib/api";
 import { EventoCampus, listarEventosPendientes, moderarEvento } from "@/lib/eventos";
 import { formatearFechaHora } from "@/lib/reglasFlyer";
+import { useRefrescoAutomatico } from "@/lib/useRefrescoAutomatico";
 import estilos from "./eventos.module.css";
 
 export default function EventosPendientesPage() {
@@ -16,17 +17,16 @@ export default function EventosPendientesPage() {
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError("");
-    try {
-      setEventos(await listarEventosPendientes());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudieron cargar los eventos pendientes.");
-    } finally {
-      setCargando(false);
-    }
+  // Sin botón «Actualizar»: un evento nuevo en revisión (aviso en vivo) o volver a la pestaña trae la lista al día, sin parpadeo.
+  const refrescar = useCallback(() => {
+    listarEventosPendientes()
+      .then((pendientes) => {
+        setEventos(pendientes);
+        setError("");
+      })
+      .catch(() => undefined);
   }, []);
+  useRefrescoAutomatico(refrescar);
 
   useEffect(() => {
     let activo = true;
@@ -83,7 +83,6 @@ export default function EventosPendientesPage() {
       <section className={estilos.lista} aria-busy={cargando}>
         <div className={estilos.encabezado}>
           <div><h2>En revisión</h2><p>{eventos.length} {eventos.length === 1 ? "evento" : "eventos"}</p></div>
-          <button type="button" className={estilos.secundario} disabled={cargando} onClick={() => void cargar()}>Actualizar</button>
         </div>
 
         {cargando ? <p className={estilos.vacio}>Cargando eventos…</p> : eventos.length === 0 ? (

@@ -33,18 +33,6 @@
   font-weight: 600;
 }
 
-.actualizar {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1.5px solid var(--borde);
-  border-radius: 12px;
-  background: var(--superficie);
-  color: var(--ucb-marino);
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
-
 .error {
   margin: 0;
   padding: 12px 14px;
@@ -662,7 +650,6 @@
 @media (hover: hover) and (pointer: fine) {
   .filtro:hover { border-color: var(--ucb-azul-medio); color: var(--ucb-marino); }
   .pestana:hover { color: var(--ucb-marino); }
-  .actualizar:hover { box-shadow: var(--sombra-2); }
 }
 
 @media (min-width: 900px) {

@@ -34,6 +34,7 @@ import {
 import { ErrorApi } from "@/lib/api";
 import { reporteDeUsuario, usuarioParaSancionar } from "@/lib/reglasUsuarios";
 import { MENSAJE_SIN_ETIQUETA, puedeActivarse } from "@/lib/reglasEtiquetas";
+import { useRefrescoAutomatico } from "@/lib/useRefrescoAutomatico";
 import { useSesion } from "@/lib/useSesion";
 import { esAdmin } from "@/services/authService";
 import Puntuacion from "@/components/app/Puntuacion";
@@ -176,6 +177,11 @@ function PanelAdminContenido() {
     if (esAdmin(sesion)) cargar();
   }, [sesion, cargar]);
 
+  // Sin botón «Actualizar»: llega un reporte o un evento nuevo (aviso en vivo) o el admin vuelve a la pestaña → se recarga solo.
+  useRefrescoAutomatico(useCallback(() => {
+    if (esAdmin(sesion)) cargar();
+  }, [sesion, cargar]));
+
   async function cambiar(lugar: LugarAdmin, estado: EstadoLugar) {
     // HU30: un lugar recomendable no se activa sin tipo de actividad. Se abre su formulario para elegirlo.
     if (estado === "ACTIVO" && !puedeActivarse(lugar)) {
@@ -271,9 +277,6 @@ function PanelAdminContenido() {
           <h1 className={estilos.titulo}>Panel Admin</h1>
           <p className={estilos.subtitulo}>BREAKU · Administración del campus</p>
         </div>
-        <motion.button type="button" className={estilos.actualizar} onClick={cargar} whileTap={{ scale: 0.96 }} transition={RESORTE_TOQUE}>
-          Actualizar
-        </motion.button>
       </Pieza>
 
       {error && (
