@@ -70,6 +70,11 @@
   border-radius: 18px;
 }
 
+/* Sin foto, el detalle es el único hijo: ocupa todo el ancho en vez de caer en la columna de 220px de la foto. */
+.evento > :only-child {
+  grid-column: 1 / -1;
+}
+
 .detalle {
   min-width: 0;
 }
