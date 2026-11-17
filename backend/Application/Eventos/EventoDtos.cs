@@ -13,7 +13,9 @@ public sealed record EventoFormularioRequest(
     int? VisitaMin,
     int? VisitaMax,
     // FORMULARIO (por defecto) o FLYER cuando el borrador salió de leer un afiche. Solo se usa al crear.
-    string? Origen = null);
+    string? Origen = null,
+    // Solo al editar: borra la foto actual del evento. No se puede combinar con una foto nueva. Al crear se ignora.
+    bool QuitarFoto = false);
 
 public sealed record EventoDto(
     int Id,

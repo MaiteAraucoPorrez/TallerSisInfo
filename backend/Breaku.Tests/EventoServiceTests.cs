@@ -62,10 +62,13 @@ public sealed class EventoServiceTests
         public Task<Evento?> ObtenerMioAsync(int eventoId, int usuarioId, CancellationToken ct = default)
             => Task.FromResult(Eventos.FirstOrDefault(e => e.Id == eventoId && e.CreadorId == usuarioId));
 
-        public Task GuardarCambiosAsync(Evento evento, byte[]? imagen, string? tipoMime, CancellationToken ct = default)
+        public Task GuardarCambiosAsync(
+            Evento evento, byte[]? imagen, string? tipoMime, bool quitarImagen = false, CancellationToken ct = default)
         {
             if (imagen is not null && tipoMime is not null)
                 Imagenes[evento.Id] = (imagen, tipoMime, ReglasEvento.VersionImagen(evento.UpdatedAt));
+            else if (quitarImagen)
+                Imagenes.Remove(evento.Id);
             return Task.CompletedTask;
         }
 
@@ -339,6 +342,160 @@ public sealed class EventoServiceTests
         var evento = Assert.Single(repo.Eventos);
         Assert.Equal("Original", evento.Titulo);
         Assert.Equal(estado, evento.Estado);
+    }
+
+    private static readonly byte[] FotoJpg = [0xFF, 0xD8, 0xFF, 0x01];
+    private static readonly byte[] FotoPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x02];
+
+    private static async Task<(EventoService Servicio, RepositorioFalso Repo, int Id)> EventoConFotoAsync()
+    {
+        var (servicio, repo) = CrearServicio();
+        var creado = await servicio.CrearAsync(Usuario, false, Solicitud(), FotoJpg);
+        return (servicio, repo, creado.Id);
+    }
+
+    [Fact]
+    public async Task Editar_con_una_foto_nueva_reemplaza_la_anterior()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+        repo.Imagenes[id] = (FotoJpg, "image/jpeg", Ahora.UtcDateTime.AddDays(-1)); // la foto se subió ayer
+        var antes = (await servicio.ListarMiosAsync(Usuario)).Single().FotoUrl;
+
+        var dto = await servicio.ActualizarAsync(id, Usuario, Solicitud(titulo: "Con foto nueva"), FotoPng);
+
+        var imagen = Assert.Single(repo.Imagenes).Value;
+        Assert.Equal(FotoPng, imagen.Contenido);
+        Assert.Equal("image/png", imagen.TipoMime);
+        Assert.NotNull(dto.FotoUrl);
+        Assert.NotEqual(antes, dto.FotoUrl);
+    }
+
+    [Fact]
+    public async Task Editar_sin_tocar_la_foto_la_conserva()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+
+        var dto = await servicio.ActualizarAsync(id, Usuario, Solicitud(titulo: "Solo cambia el título"), null);
+
+        Assert.Equal(FotoJpg, Assert.Single(repo.Imagenes).Value.Contenido);
+        Assert.NotNull(dto.FotoUrl);
+    }
+
+    [Fact]
+    public async Task Quitar_la_foto_al_editar_la_borra_y_el_evento_queda_sin_fotoUrl()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+        var solicitud = Solicitud(titulo: "Sin foto") with { QuitarFoto = true };
+
+        var dto = await servicio.ActualizarAsync(id, Usuario, solicitud, null);
+
+        Assert.Empty(repo.Imagenes);
+        Assert.Null(dto.FotoUrl);
+        Assert.Equal("Sin foto", dto.Titulo);
+        Assert.Null((await servicio.ListarMiosAsync(Usuario)).Single().FotoUrl);
+    }
+
+    [Fact]
+    public async Task Quitar_la_foto_de_un_evento_sin_foto_no_falla()
+    {
+        var (servicio, repo) = CrearServicio();
+        var creado = await servicio.CrearAsync(Usuario, false, Solicitud(), null);
+
+        var dto = await servicio.ActualizarAsync(creado.Id, Usuario, Solicitud() with { QuitarFoto = true }, null);
+
+        Assert.Empty(repo.Imagenes);
+        Assert.Null(dto.FotoUrl);
+    }
+
+    [Fact]
+    public async Task No_se_puede_subir_una_foto_nueva_y_quitar_la_actual_a_la_vez()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(id, Usuario, Solicitud(titulo: "Cambiado") with { QuitarFoto = true }, FotoPng));
+
+        Assert.Equal("VALIDACION", error.Codigo);
+        Assert.Equal(ReglasEvento.MensajeFotoNuevaYQuitar, error.Message);
+        Assert.Equal(FotoJpg, Assert.Single(repo.Imagenes).Value.Contenido);
+        Assert.Equal("Feria de ciencias", repo.Eventos.Single().Titulo);
+    }
+
+    [Fact]
+    public async Task Solo_el_dueno_puede_cambiar_o_quitar_la_foto()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+
+        var alQuitar = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(id, 99, Solicitud() with { QuitarFoto = true }, null));
+        var alCambiar = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(id, 99, Solicitud(), FotoPng));
+
+        Assert.Equal("NO_ENCONTRADO", alQuitar.Codigo);
+        Assert.Equal("NO_ENCONTRADO", alCambiar.Codigo);
+        Assert.Equal(FotoJpg, Assert.Single(repo.Imagenes).Value.Contenido);
+    }
+
+    [Theory]
+    [InlineData(Evento.EstadoRechazado)]
+    [InlineData(Evento.EstadoCancelado)]
+    public async Task En_un_evento_no_editable_no_se_toca_la_foto(string estado)
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+        repo.Eventos.Single().Estado = estado;
+
+        var alQuitar = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(id, Usuario, Solicitud() with { QuitarFoto = true }, null));
+        var alCambiar = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(id, Usuario, Solicitud(), FotoPng));
+
+        Assert.Equal("EVENTO_NO_EDITABLE", alQuitar.Codigo);
+        Assert.Equal("EVENTO_NO_EDITABLE", alCambiar.Codigo);
+        Assert.Equal(FotoJpg, Assert.Single(repo.Imagenes).Value.Contenido);
+    }
+
+    [Fact]
+    public async Task Un_evento_que_ya_empezo_no_permite_cambiar_ni_quitar_la_foto()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+        repo.Eventos.Single().Inicio = Ahora.UtcDateTime.AddMinutes(-5);
+
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.ActualizarAsync(id, Usuario, Solicitud() with { QuitarFoto = true }, null));
+
+        Assert.Equal("EVENTO_INICIADO", error.Codigo);
+        Assert.Single(repo.Imagenes);
+    }
+
+    [Fact]
+    public async Task Una_foto_nueva_invalida_se_rechaza_y_la_anterior_se_conserva()
+    {
+        var (servicio, repo, id) = await EventoConFotoAsync();
+        var noEsImagen = new byte[] { 1, 2, 3, 4 };
+        var demasiadoGrande = new byte[ReglasEvento.BytesMaximosImagen + 1];
+        demasiadoGrande[0] = 0xFF; demasiadoGrande[1] = 0xD8; demasiadoGrande[2] = 0xFF;
+
+        foreach (var invalida in new[] { noEsImagen, demasiadoGrande, Array.Empty<byte>() })
+        {
+            var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+                () => servicio.ActualizarAsync(id, Usuario, Solicitud(titulo: "No debe cambiar"), invalida));
+            Assert.Equal("VALIDACION", error.Codigo);
+        }
+
+        Assert.Equal(FotoJpg, Assert.Single(repo.Imagenes).Value.Contenido);
+        Assert.Equal("Feria de ciencias", repo.Eventos.Single().Titulo);
+    }
+
+    [Fact]
+    public async Task Cambiar_la_foto_no_altera_el_refiltro_del_texto_al_editar()
+    {
+        var (servicio, _, id) = await EventoConFotoAsync();
+
+        var dto = await servicio.ActualizarAsync(
+            id, Usuario, Solicitud(lugarId: null, lugarTexto: "Patio lateral"), FotoPng);
+
+        Assert.Equal(Evento.EstadoPendiente, dto.Estado);
+        Assert.NotNull(dto.FotoUrl);
     }
 
     [Theory]

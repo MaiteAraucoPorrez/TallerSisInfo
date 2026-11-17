@@ -21,7 +21,8 @@ public interface IEventoRepository
         CancellationToken ct = default);
     Task<List<EventoListado>> ListarMiosAsync(int usuarioId, CancellationToken ct = default);
     Task<Evento?> ObtenerMioAsync(int eventoId, int usuarioId, CancellationToken ct = default);
-    Task GuardarCambiosAsync(Evento evento, byte[]? imagen, string? tipoMime, CancellationToken ct = default);
+    /// <summary>Guarda los cambios del evento. Una imagen nueva reemplaza la anterior; `quitarImagen` la borra (si no hay, no hace nada).</summary>
+    Task GuardarCambiosAsync(Evento evento, byte[]? imagen, string? tipoMime, bool quitarImagen = false, CancellationToken ct = default);
     Task<FotoEvento?> ObtenerImagenAsync(int eventoId, CancellationToken ct = default);
     Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default);
     Task<ResultadoModeracionEvento> ModerarAsync(
