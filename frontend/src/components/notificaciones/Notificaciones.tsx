@@ -14,8 +14,7 @@ import {
   obtenerConfiguracion,
 } from "@/lib/notificaciones";
 import { hhmm } from "@/lib/puentes";
-import { IconoNotificacion, presentacionNotificacion } from "@/lib/reglasNotificaciones";
-import { enlaceMisReportes } from "@/lib/reglasReportes";
+import { IconoNotificacion, bandejaVacia, presentacionNotificacion, rutaNotificacion } from "@/lib/reglasNotificaciones";
 import { useAlReconectar, useEventoEnVivo } from "@/lib/tiempoReal";
 import estilos from "./Notificaciones.module.css";
 
@@ -67,14 +66,6 @@ const ICONOS: Record<IconoNotificacion, typeof IconoRayoApp> = {
   calendario: IconoCalendario,
 };
 
-function rutaDe(n: Notificacion): string {
-  if (n.tipo === "REPORTE_RESUELTO") return enlaceMisReportes(n.reporteId);
-  if (n.tipo === "EVENTO_APROBADO" || n.tipo === "EVENTO_RECHAZADO") return "/eventos";
-  if (n.tipo === "CONEXION_SOLICITADA" || n.tipo === "CONEXION_ACEPTADA") return "/comunidades?pestana=libres";
-  if (n.tipo === "PUENTE_DISPONIBLE" || n.tipo === "DESPUES_DE_CLASES") return n.duracionMinutos ? `/recomendaciones?min=${n.duracionMinutos}` : "/recomendaciones";
-  return n.comunidadId ? `/comunidades?pestana=descubrir&comunidad=${n.comunidadId}` : "/comunidades?pestana=descubrir";
-}
-
 function haceCuanto(iso: string): string {
   const minutos = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   if (minutos < 1) return "Recién";
@@ -89,9 +80,11 @@ const sinSuscripcion = () => () => {};
 
 type Props = {
   recarga: number;
+  /** Campanita del administrador: reportes nuevos y eventos por revisar. Sin la preferencia de avisos de puente. */
+  admin?: boolean;
 };
 
-export default function Notificaciones({ recarga }: Props) {
+export default function Notificaciones({ recarga, admin = false }: Props) {
   const [lista, setLista] = useState<Notificacion[]>([]);
   const [activas, setActivas] = useState<boolean | null>(null);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
@@ -143,12 +136,13 @@ export default function Notificaciones({ recarga }: Props) {
   useAlReconectar(consultarEnVivo);
 
   useEffect(() => {
+    if (admin) return;
     let activo = true;
     obtenerConfiguracion()
       .then((c) => activo && setActivas(c.notificacionesActivas))
       .catch((e: Error) => activo && setError(e.message));
     return () => { activo = false; };
-  }, []);
+  }, [admin]);
 
   useEffect(() => {
     if (!abierto) return;
@@ -213,10 +207,12 @@ export default function Notificaciones({ recarga }: Props) {
   };
 
   const ver = (n: Notificacion) => {
+    const ruta = rutaNotificacion(n);
     void leer(n.id);
     setAbierto(false);
-    router.push(rutaDe(n));
+    if (ruta) router.push(ruta);
   };
+  const vacia = bandejaVacia(filtro, admin);
 
   return (
     <div className={estilos.contenedor}>
@@ -342,8 +338,8 @@ export default function Notificaciones({ recarga }: Props) {
                         <span className={estilos.vacioIcono} aria-hidden="true">
                           <IconoCampana />
                         </span>
-                        <strong>{filtro === "sin-leer" ? "No tienes avisos sin leer" : "Sin avisos por ahora"}</strong>
-                        <span>Te avisaremos en cuanto empiece uno de tus puentes.</span>
+                        <strong>{vacia.titulo}</strong>
+                        <span>{vacia.detalle}</span>
                       </div>
                     ) : (
                       <motion.ul
@@ -385,9 +381,9 @@ export default function Notificaciones({ recarga }: Props) {
                                           Marcar leída
                                         </button>
                                       )}
-                                      {n.tipo !== "SANCION_ADVERTENCIA" && (
+                                      {rutaNotificacion(n) && (
                                         <button type="button" className={estilos.ver} onClick={() => ver(n)}>
-                                          {n.tipo === "REPORTE_RESUELTO" ? "Mis reportes" : "Ver"}
+                                          {n.tipo === "REPORTE_RESUELTO" ? "Mis reportes" : admin ? "Revisar" : "Ver"}
                                         </button>
                                       )}
                                     </div>
@@ -401,6 +397,14 @@ export default function Notificaciones({ recarga }: Props) {
                     )}
                   </div>
 
+                  {admin ? (
+                    <footer className={estilos.pieBandeja}>
+                      <p className={estilos.nota}>
+                        Te llega un aviso cuando un estudiante envía un reporte o un evento queda en revisión. Cuando tú u otro admin lo
+                        resuelve, queda como leído para todos.
+                      </p>
+                    </footer>
+                  ) : (
                   <footer className={estilos.pieBandeja}>
                     <label className={estilos.preferencia}>
                       <span>Avisarme cuando empiece un puente</span>
@@ -425,6 +429,7 @@ export default function Notificaciones({ recarga }: Props) {
                     )}
                     <p className={estilos.nota}>Los avisos se generan solos cuando empieza un hueco libre entre clases y cuando terminan tus clases del día.</p>
                   </footer>
+                  )}
                 </motion.aside>
               )}
             </AnimatePresence>

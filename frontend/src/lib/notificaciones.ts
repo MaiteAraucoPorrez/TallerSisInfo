@@ -12,7 +12,10 @@ export type Notificacion = {
     | "CONEXION_ACEPTADA"
     | "REPORTE_RESUELTO"
     | "EVENTO_APROBADO"
-    | "EVENTO_RECHAZADO";
+    | "EVENTO_RECHAZADO"
+    // Para el administrador (migración 030): quedan leídos para todos los admins cuando uno los resuelve.
+    | "REPORTE_NUEVO"
+    | "EVENTO_POR_REVISAR";
   mensaje: string;
   fecha: string | null;
   horaInicio: string | null;
@@ -21,7 +24,7 @@ export type Notificacion = {
   leida: boolean;
   creadaEn: string;
   comunidadId?: number | null;
-  /** HU27: en REPORTE_RESUELTO, el reporte revisado (la campanita lleva a «Mis reportes»). */
+  /** HU27: en REPORTE_RESUELTO, el reporte revisado (la campanita lleva a «Mis reportes»); en REPORTE_NUEVO, el reporte por revisar. */
   reporteId?: number | null;
 };
 
