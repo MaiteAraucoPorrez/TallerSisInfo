@@ -20,6 +20,7 @@ import {
   fechaBoliviaParaFormulario,
   formDataEvento,
   FOTO_EVENTO_MAX_BYTES,
+  presentacionEvento,
   validarFotoEvento,
   validarFormularioEvento,
 } from "@/lib/reglasEventos";
@@ -353,29 +354,32 @@ export default function EventosPage() {
           </div>
           {cargando ? <p className={estilos.vacio}>Cargando tus eventos…</p> : eventos.length === 0 ? (
             <div className={estilos.vacio}><strong>Aún no has creado eventos.</strong><span>Cuando publiques uno, aparecerá aquí.</span><button type="button" className={estilos.botonPrimario} onClick={() => setPestana("crear")}>Crear mi primer evento</button></div>
-          ) : eventos.map((evento) => (
+          ) : eventos.map((evento) => {
+            const vista = presentacionEvento(evento.estado, evento.inicio, evento.fin, ahora);
+            return (
             <article key={evento.id} className={estilos.evento}>
               {evento.fotoUrl && (
                 <FotoEvento ruta={evento.fotoUrl} titulo={evento.titulo} />
               )}
               <div className={estilos.detalleEvento}>
                 <div className={estilos.tituloEvento}>
-                  <div><span className={`${estilos.estado} ${estilos[`estado${evento.estado}`]}`}>{ETIQUETAS_ESTADO[evento.estado]}</span><h3>{evento.titulo}</h3></div>
+                  <div><span className={`${estilos.estado} ${estilos[`estado${vista.clave}`]}`}>{vista.etiqueta}</span><h3>{evento.titulo}</h3></div>
                   <span className={estilos.horario}>{formatearFechaHora(evento.inicio)} – {formatearFechaHora(evento.fin)}</span>
                 </div>
                 <p className={estilos.lugar}>{evento.lugarId === null ? `Fuera del campus · ${evento.lugar}` : evento.lugar}</p>
                 {evento.descripcion && <p className={estilos.descripcionEvento}>{evento.descripcion}</p>}
                 {evento.asistencia === "FIJA" ? <p className={estilos.ayuda}>Hay que llegar a la hora</p> : <p className={estilos.ayuda}>Visita libre: {evento.visitaMin}–{evento.visitaMax} min</p>}
                 {(evento.estado === "PENDIENTE" || evento.estado === "RECHAZADO") && evento.motivo && <p className={estilos.motivo}><strong>Motivo:</strong> {evento.motivo}</p>}
-                {evento.estado !== "CANCELADO" && new Date(evento.inicio).getTime() > ahora && (
+                {(vista.editable || vista.cancelable) && (
                   <div className={estilos.accionesEvento}>
-                    <button type="button" className={estilos.botonSecundario} onClick={() => editar(evento)} disabled={guardando}>Editar</button>
-                    <button type="button" className={estilos.botonPeligro} onClick={() => void cancelar(evento)} disabled={guardando}>Cancelar evento</button>
+                    {vista.editable && <button type="button" className={estilos.botonSecundario} onClick={() => editar(evento)} disabled={guardando}>Editar</button>}
+                    {vista.cancelable && <button type="button" className={estilos.botonPeligro} onClick={() => void cancelar(evento)} disabled={guardando}>Cancelar evento</button>}
                   </div>
                 )}
               </div>
             </article>
-          ))}
+            );
+          })}
         </section>
       )}
 
