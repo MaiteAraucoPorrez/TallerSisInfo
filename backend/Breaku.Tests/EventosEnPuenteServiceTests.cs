@@ -40,6 +40,9 @@ public sealed class EventosEnPuenteServiceTests
         public Task<Evento?> ObtenerMioAsync(int eventoId, int usuarioId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task GuardarCambiosAsync(Evento evento, byte[]? imagen, string? tipoMime, bool quitarImagen = false, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<FotoEvento?> ObtenerImagenAsync(int eventoId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<List<EventoListado>> ListarPublicadosAsync(DateTime ahoraUtc, DateTime hastaUtc, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<EventoListado?> ObtenerPublicadoAsync(int eventoId, DateTime ahoraUtc, CancellationToken ct = default) => throw new NotSupportedException();
+
         public Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<ResultadoModeracionEvento> ModerarAsync(int eventoId, string estado, string? motivo,
             DateTime ahoraUtc, CancellationToken ct = default) => throw new NotSupportedException();

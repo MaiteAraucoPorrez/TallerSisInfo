@@ -81,6 +81,19 @@ public sealed class EventoServiceTests
                 Suspendidos.Contains(evento.CreadorId)));
         }
 
+        public Task<List<EventoListado>> ListarPublicadosAsync(DateTime ahoraUtc, DateTime hastaUtc, CancellationToken ct = default)
+            => Task.FromResult(Eventos
+                .Where(e => e.Estado == Evento.EstadoPublicado
+                    && e.Fin > ahoraUtc
+                    && e.Inicio < hastaUtc
+                    && !Suspendidos.Contains(e.CreadorId))
+                .Select(AListado).ToList());
+
+        public Task<EventoListado?> ObtenerPublicadoAsync(int eventoId, DateTime ahoraUtc, CancellationToken ct = default)
+            => Task.FromResult(Eventos
+                .Where(e => e.Id == eventoId && e.Estado == Evento.EstadoPublicado && !Suspendidos.Contains(e.CreadorId))
+                .Select(AListado).FirstOrDefault());
+
         public Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default)
             => Task.FromResult(Eventos
                 .Where(e => e.Estado == Evento.EstadoPendiente && e.Fin > ahoraUtc)
@@ -637,5 +650,90 @@ public sealed class EventoServiceTests
         var otro = await servicio.CrearAsync(Usuario, false, Solicitud(lugarId: null, lugarTexto: "Patio trasero"), null);
         await servicio.CancelarAsync(otro.Id, Usuario);
         Assert.Equal("evento-revisado:2", avisos.Llamadas[^1]);
+    }
+
+    private static Evento EventoVisible(
+        int id, DateTime inicio, DateTime fin, int creador = Usuario, int? lugarId = 3,
+        string? lugarTexto = null, string estado = Evento.EstadoPublicado)
+        => new()
+        {
+            Id = id,
+            CreadorId = creador,
+            Titulo = $"Evento {id}",
+            Estado = estado,
+            LugarId = lugarId,
+            LugarTexto = lugarTexto,
+            Asistencia = ReglasEvento.AsistenciaFija,
+            Inicio = inicio,
+            Fin = fin,
+            CreatedAt = Ahora.UtcDateTime,
+            UpdatedAt = Ahora.UtcDateTime
+        };
+
+    [Fact]
+    public async Task Hoy_y_esta_semana_solo_listan_publicados_que_no_terminaron_y_ordenados_por_inicio()
+    {
+        var (servicio, repo) = CrearServicio();
+        var ahora = Ahora.UtcDateTime;
+        repo.Eventos.Add(EventoVisible(1, ahora.AddHours(2), ahora.AddHours(3)));
+        repo.Eventos.Add(EventoVisible(2, ahora.AddHours(-3), ahora.AddHours(-1)));
+        repo.Eventos.Add(EventoVisible(3, ahora.AddHours(1), ahora.AddHours(2), estado: Evento.EstadoPendiente));
+        repo.Eventos.Add(EventoVisible(4, ahora.AddDays(1), ahora.AddDays(1).AddHours(1)));
+        repo.Eventos.Add(EventoVisible(5, ahora.AddHours(1), ahora.AddHours(2), creador: 99));
+        repo.Eventos.Add(EventoVisible(6, ahora.AddDays(8), ahora.AddDays(8).AddHours(1)));
+        repo.Suspendidos.Add(99);
+
+        var hoy = await servicio.ListarPublicadosAsync("hoy");
+        var semana = await servicio.ListarPublicadosAsync("Semana");
+
+        Assert.Equal([1], hoy.Select(e => e.Id));
+        Assert.Equal([1, 4], semana.Select(e => e.Id));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("mes")]
+    public async Task Un_rango_distinto_de_hoy_y_semana_da_error_de_validacion(string? rango)
+    {
+        var (servicio, _) = CrearServicio();
+
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(() => servicio.ListarPublicadosAsync(rango));
+
+        Assert.Equal("VALIDACION", error.Codigo);
+    }
+
+    [Fact]
+    public async Task La_tarjeta_usa_el_lugar_del_catalogo_o_el_texto_marcado_como_fuera_del_campus()
+    {
+        var (servicio, repo) = CrearServicio();
+        var ahora = Ahora.UtcDateTime;
+        repo.Eventos.Add(EventoVisible(1, ahora.AddHours(1), ahora.AddHours(2)));
+        repo.Eventos.Add(EventoVisible(2, ahora.AddHours(2), ahora.AddHours(3), lugarId: null, lugarTexto: "Plaza 14 de Septiembre"));
+
+        var lista = await servicio.ListarPublicadosAsync("hoy");
+
+        var catalogo = lista.Single(e => e.Id == 1);
+        Assert.Equal("Biblioteca", catalogo.Lugar);
+        Assert.False(catalogo.FueraDelCampus);
+        var fuera = lista.Single(e => e.Id == 2);
+        Assert.Equal("Plaza 14 de Septiembre", fuera.Lugar);
+        Assert.True(fuera.FueraDelCampus);
+    }
+
+    [Fact]
+    public async Task El_detalle_solo_existe_para_eventos_publicados()
+    {
+        var (servicio, repo) = CrearServicio();
+        var ahora = Ahora.UtcDateTime;
+        repo.Eventos.Add(EventoVisible(1, ahora.AddHours(1), ahora.AddHours(2)));
+        repo.Eventos.Add(EventoVisible(2, ahora.AddHours(1), ahora.AddHours(2), estado: Evento.EstadoPendiente));
+
+        Assert.Equal("Evento 1", (await servicio.ObtenerPublicadoAsync(1)).Titulo);
+        foreach (var id in new[] { 2, 99 })
+        {
+            var error = await Assert.ThrowsAsync<ReglaNegocioException>(() => servicio.ObtenerPublicadoAsync(id));
+            Assert.Equal("NO_ENCONTRADO", error.Codigo);
+        }
     }
 }

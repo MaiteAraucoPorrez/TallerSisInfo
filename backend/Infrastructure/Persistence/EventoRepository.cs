@@ -113,6 +113,26 @@ public sealed class EventoRepository : IEventoRepository
             DateTime.SpecifyKind(fila.ActualizadaEn, DateTimeKind.Utc), fila.CreadorId, fila.Estado, suspendido);
     }
 
+    public Task<List<EventoListado>> ListarPublicadosAsync(DateTime ahoraUtc, DateTime hastaUtc, CancellationToken ct = default)
+    {
+        var suspendidos = FiltrosSancion.IdsSuspendidos(_db, ahoraUtc);
+        return ListarAsync(_db.Eventos.AsNoTracking()
+            .Where(e => e.Estado == Evento.EstadoPublicado
+                && e.Fin > ahoraUtc
+                && e.Inicio < hastaUtc
+                && !suspendidos.Contains(e.CreadorId)), ct);
+    }
+
+    public async Task<EventoListado?> ObtenerPublicadoAsync(int eventoId, DateTime ahoraUtc, CancellationToken ct = default)
+    {
+        var suspendidos = FiltrosSancion.IdsSuspendidos(_db, ahoraUtc);
+        var lista = await ListarAsync(_db.Eventos.AsNoTracking()
+            .Where(e => e.Id == eventoId
+                && e.Estado == Evento.EstadoPublicado
+                && !suspendidos.Contains(e.CreadorId)), ct);
+        return lista.FirstOrDefault();
+    }
+
     public Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default)
         => ListarAsync(_db.Eventos.AsNoTracking()
             .Where(e => e.Estado == Evento.EstadoPendiente && e.Fin > ahoraUtc), ct);

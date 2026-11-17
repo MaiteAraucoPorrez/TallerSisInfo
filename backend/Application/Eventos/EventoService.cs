@@ -85,6 +85,24 @@ public sealed class EventoService
         return ADto(new EventoListado(evento, nombreLugar, imagen is null ? null : ReglasEvento.VersionImagen(ahora.UtcDateTime)));
     }
 
+    public async Task<List<EventoPublicoDto>> ListarPublicadosAsync(string? rango, CancellationToken ct = default)
+    {
+        var ahora = _reloj.GetUtcNow();
+        var hasta = ReglasEvento.HastaDelRango(rango, ahora)
+                    ?? throw new ReglaNegocioException("VALIDACION", ReglasEvento.MensajeRangoInvalido);
+        return (await _repository.ListarPublicadosAsync(ahora.UtcDateTime, hasta, ct))
+            .OrderBy(e => e.Evento.Inicio)
+            .Select(APublicoDto)
+            .ToList();
+    }
+
+    public async Task<EventoPublicoDto> ObtenerPublicadoAsync(int eventoId, CancellationToken ct = default)
+    {
+        var evento = await _repository.ObtenerPublicadoAsync(eventoId, _reloj.GetUtcNow().UtcDateTime, ct)
+                     ?? throw new ReglaNegocioException("NO_ENCONTRADO", "El evento no existe.");
+        return APublicoDto(evento);
+    }
+
     public async Task<List<EventoDto>> ListarMiosAsync(int usuarioId, CancellationToken ct = default)
         => (await _repository.ListarMiosAsync(usuarioId, ct))
             .Select(ADto)
@@ -245,6 +263,28 @@ public sealed class EventoService
 
     private static (string? TipoMime, string? Error) ValidarImagen(byte[]? imagen)
         => imagen is null ? (null, null) : ReglasEvento.ValidarImagen(imagen);
+
+    private static EventoPublicoDto APublicoDto(EventoListado item)
+    {
+        var evento = item.Evento;
+        var offsetBolivia = TimeSpan.FromHours(-4);
+        static DateTimeOffset Local(DateTime utc, TimeSpan offset)
+            => new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc)).ToOffset(offset);
+
+        return new EventoPublicoDto(
+            evento.Id,
+            evento.Titulo,
+            evento.Descripcion,
+            Local(evento.Inicio, offsetBolivia),
+            Local(evento.Fin, offsetBolivia),
+            evento.LugarId,
+            item.NombreLugar,
+            evento.LugarId is null,
+            evento.Asistencia,
+            evento.VisitaMin,
+            evento.VisitaMax,
+            ReglasEvento.UrlImagen(evento.Id, item.FotoActualizadaEn));
+    }
 
     private static EventoDto ADto(EventoListado item)
     {

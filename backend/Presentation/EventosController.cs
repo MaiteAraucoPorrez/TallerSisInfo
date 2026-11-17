@@ -30,6 +30,38 @@ public sealed class EventosController : ControllerBase
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")
                   ?? throw new UnauthorizedAccessException());
 
+    [HttpGet]
+    [ProducesResponseType(typeof(List<EventoPublicoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Listar([FromQuery] string? rango, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.ListarPublicadosAsync(rango, ct));
+        }
+        catch (ReglaNegocioException ex)
+        {
+            return ResponderRegla(ex);
+        }
+    }
+
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(EventoPublicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Detalle(int id, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.ObtenerPublicadoAsync(id, ct));
+        }
+        catch (ReglaNegocioException ex)
+        {
+            return ResponderRegla(ex);
+        }
+    }
+
     [HttpGet("lugares")]
     [ProducesResponseType(typeof(List<EventoLugarDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Lugares(CancellationToken ct)
