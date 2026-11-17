@@ -4,37 +4,67 @@
   padding: 28px 0 48px;
 }
 
+/* Portada con foto (como Horario, Campus y Comunidades): un evento de noche en el campus, solo de esta pantalla. */
 .portada {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  justify-items: start;
+  min-height: 260px;
+  align-content: end;
   padding: clamp(24px, 5vw, 42px);
   border-radius: 28px;
-  background:
-    radial-gradient(circle at 88% 12%, rgba(255, 207, 53, 0.25), transparent 34%),
-    linear-gradient(135deg, var(--ucb-marino), #0c5d80);
+  background: var(--ucb-marino);
   color: white;
   box-shadow: var(--sombra-3);
 }
 
 .etiqueta {
   display: inline-flex;
-  padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
-  color: #ffdd73;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.etiqueta svg {
+  color: var(--ucb-amarillo);
+}
+
+.cifrasPortada {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+}
+
+.cifrasPortada b {
+  margin-right: 4px;
+  color: var(--ucb-amarillo);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .portada h1 {
-  margin: 18px 0 8px;
+  max-width: 14ch;
+  margin: 14px 0 8px;
+  line-height: 1.04;
+  text-wrap: balance;
   font-family: var(--fuente-titulo), system-ui, sans-serif;
   font-size: clamp(2rem, 5vw, 3.1rem);
   letter-spacing: -0.04em;
 }
 
 .portada p {
-  max-width: 650px;
+  max-width: 46ch;
   margin: 0;
   color: rgba(255, 255, 255, 0.82);
   line-height: 1.65;
