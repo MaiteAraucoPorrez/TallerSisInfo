@@ -8,6 +8,7 @@ public sealed class Evento
     public const string EstadoCancelado = "CANCELADO";
 
     public const string OrigenFormulario = "FORMULARIO";
+    public const string OrigenFlyer = "FLYER";
     public const string OrigenAdmin = "ADMIN";
 
     public int Id { get; set; }

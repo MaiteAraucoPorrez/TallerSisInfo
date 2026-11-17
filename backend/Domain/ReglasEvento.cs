@@ -19,6 +19,7 @@ public static class ReglasEvento
     public const string MensajeLimiteDiario = "Ya alcanzaste el máximo de 3 eventos creados por día.";
     public const string MensajeInicioPasado = "No se puede editar ni cancelar un evento que ya empezó.";
     public const string MensajeEventoNoPendiente = "El evento ya fue revisado.";
+    public const string MensajeOrigenInvalido = "El origen del evento no es válido.";
     public const string MensajeEventoNoEditable = "Solo se pueden editar los eventos pendientes o publicados.";
     public const string MensajeEventoFinalizado = "El evento ya terminó, así que no se puede revisar.";
 
@@ -58,6 +59,18 @@ public static class ReglasEvento
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Origen con el que se guarda un evento nuevo. El cliente solo puede pedir FORMULARIO o FLYER (vacío = FORMULARIO);
+    /// cualquier otro valor, incluido ADMIN, es un error. Un administrador siempre crea con origen ADMIN.
+    /// </summary>
+    public static (string? Origen, string? Error) ResolverOrigen(bool esAdmin, string? solicitado)
+    {
+        var pedido = string.IsNullOrWhiteSpace(solicitado) ? Evento.OrigenFormulario : solicitado.Trim().ToUpperInvariant();
+        if (pedido is not (Evento.OrigenFormulario or Evento.OrigenFlyer))
+            return (null, MensajeOrigenInvalido);
+        return (esAdmin ? Evento.OrigenAdmin : pedido, null);
     }
 
     public static ResultadoPublicacion Evaluar(

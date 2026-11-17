@@ -1187,7 +1187,7 @@ Todo texto que llega al asistente o sale de él pasa por los guardrails (`Reglas
 
 ## 7i. Leer un afiche de evento (HU24 — BE #278)
 
-`POST /api/eventos/extraer` (JWT). `multipart/form-data` con **uno solo** de `archivo` (JPG, PNG o PDF, hasta 8 MB; PDF de hasta 2 páginas) o `texto` (hasta 4000 caracteres). Devuelve un **borrador**: no crea el evento (eso es `POST /api/eventos`, HU23). La firma real del archivo se valida en el servidor (no cuenta el `ContentType`). Un PDF se convierte a imágenes (PDFium, lado mayor 1600 px) y entra al mismo flujo de visión que la foto (`LLM_MODEL_IMAGEN`). Usa la política de límite de IA (10 por minuto por estudiante, compartido).
+`POST /api/eventos/extraer` (JWT). `multipart/form-data` con **uno solo** de `archivo` (JPG, PNG o PDF, hasta 8 MB; PDF de hasta 2 páginas) o `texto` (hasta 4000 caracteres). Devuelve un **borrador**: no crea el evento (eso es `POST /api/eventos`, HU23; si el formulario salió de un borrador, el cliente envía el campo opcional `Origen=FLYER`: el servidor solo acepta `FORMULARIO` —por defecto— o `FLYER`, y cualquier otro valor da 400 `VALIDACION`; un administrador siempre crea con origen `ADMIN`; el `consultaId` no se guarda, la tabla `evento` no tiene columna para él). La firma real del archivo se valida en el servidor (no cuenta el `ContentType`). Un PDF se convierte a imágenes (PDFium, lado mayor 1600 px) y entra al mismo flujo de visión que la foto (`LLM_MODEL_IMAGEN`). Usa la política de límite de IA (10 por minuto por estudiante, compartido).
 
 ```json
 {

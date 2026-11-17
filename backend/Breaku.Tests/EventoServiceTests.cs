@@ -120,11 +120,12 @@ public sealed class EventoServiceTests
         string? descripcion = null,
         string asistencia = ReglasEvento.AsistenciaFija,
         int? visitaMin = null,
-        int? visitaMax = null)
+        int? visitaMax = null,
+        string? origen = null)
         => new(titulo, descripcion,
             inicio ?? new DateTimeOffset(2026, 11, 17, 13, 0, 0, TimeSpan.FromHours(-4)),
             fin ?? new DateTimeOffset(2026, 11, 17, 14, 0, 0, TimeSpan.FromHours(-4)),
-            lugarId, lugarTexto, asistencia, visitaMin, visitaMax);
+            lugarId, lugarTexto, asistencia, visitaMin, visitaMax, origen);
 
     private static (EventoService Servicio, RepositorioFalso Repo) CrearServicio()
     {
@@ -213,6 +214,73 @@ public sealed class EventoServiceTests
         Assert.Equal(Evento.EstadoPublicado, dto.Estado);
         Assert.Equal(Evento.OrigenAdmin, dto.Origen);
         Assert.Equal(4, repo.Eventos.Count);
+    }
+
+    [Fact]
+    public async Task Un_evento_creado_desde_un_flyer_se_guarda_con_origen_FLYER_y_pasa_las_mismas_reglas()
+    {
+        var (servicio, repo) = CrearServicio();
+
+        var dto = await servicio.CrearAsync(Usuario, false, Solicitud(origen: "FLYER"), null);
+
+        Assert.Equal(Evento.OrigenFlyer, dto.Origen);
+        Assert.Equal(Evento.OrigenFlyer, Assert.Single(repo.Eventos).Origen);
+        Assert.Equal(Evento.EstadoPublicado, dto.Estado);
+
+        var (otro, repoOtro) = CrearServicio();
+        var pendiente = await otro.CrearAsync(
+            Usuario, false, Solicitud(lugarId: null, lugarTexto: "Patio lateral", origen: "FLYER"), null);
+        Assert.Equal(Evento.EstadoPendiente, pendiente.Estado);
+        Assert.Equal(Evento.OrigenFlyer, Assert.Single(repoOtro.Eventos).Origen);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("FORMULARIO")]
+    public void Sin_origen_o_con_FORMULARIO_el_evento_se_guarda_como_FORMULARIO(string? origen)
+    {
+        var (servicio, repo) = CrearServicio();
+
+        servicio.CrearAsync(Usuario, false, Solicitud(origen: origen), null).GetAwaiter().GetResult();
+
+        Assert.Equal(Evento.OrigenFormulario, Assert.Single(repo.Eventos).Origen);
+    }
+
+    [Theory]
+    [InlineData("ADMIN")]
+    [InlineData("INSTAGRAM")]
+    public async Task Un_origen_distinto_de_FORMULARIO_o_FLYER_se_rechaza_y_no_se_persiste(string origen)
+    {
+        var (servicio, repo) = CrearServicio();
+
+        var error = await Assert.ThrowsAsync<ReglaNegocioException>(
+            () => servicio.CrearAsync(Usuario, false, Solicitud(origen: origen), null));
+
+        Assert.Equal("VALIDACION", error.Codigo);
+        Assert.Equal(ReglasEvento.MensajeOrigenInvalido, error.Message);
+        Assert.Empty(repo.Eventos);
+    }
+
+    [Fact]
+    public async Task El_administrador_conserva_el_origen_ADMIN_aunque_pida_FLYER()
+    {
+        var (servicio, _) = CrearServicio();
+
+        var dto = await servicio.CrearAsync(Usuario, true, Solicitud(origen: "FLYER"), null);
+
+        Assert.Equal(Evento.OrigenAdmin, dto.Origen);
+    }
+
+    [Fact]
+    public async Task Editar_un_evento_no_cambia_su_origen()
+    {
+        var (servicio, repo) = CrearServicio();
+        var creado = await servicio.CrearAsync(Usuario, false, Solicitud(origen: "FLYER"), null);
+
+        await servicio.ActualizarAsync(creado.Id, Usuario, Solicitud(titulo: "Otro título", origen: "FORMULARIO"), null);
+
+        Assert.Equal(Evento.OrigenFlyer, Assert.Single(repo.Eventos).Origen);
     }
 
     [Fact]

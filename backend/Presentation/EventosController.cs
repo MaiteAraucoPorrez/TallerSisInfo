@@ -167,8 +167,10 @@ public sealed class EventoFormularioForm
     public string? Asistencia { get; set; }
     public int? VisitaMin { get; set; }
     public int? VisitaMax { get; set; }
+    /// <summary>FORMULARIO (por defecto) o FLYER. Solo se usa al crear; al editar se ignora.</summary>
+    public string? Origen { get; set; }
     public IFormFile? Foto { get; set; }
 
     public EventoFormularioRequest ARequest()
-        => new(Titulo, Descripcion, Inicio, Fin, LugarId, LugarTexto, Asistencia, VisitaMin, VisitaMax);
+        => new(Titulo, Descripcion, Inicio, Fin, LugarId, LugarTexto, Asistencia, VisitaMin, VisitaMax, Origen);
 }
