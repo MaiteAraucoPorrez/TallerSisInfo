@@ -5,9 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import FondoVivo from "@/components/app/FondoVivo";
 import fotoEventos from "@/components/app/fotos/eventos.webp";
-import { IconoCalendario } from "@/components/app/Iconos";
+import { IconoCalendario, IconoCamara } from "@/components/app/Iconos";
+import { Selector } from "@/components/app/Selectores";
+import CampoFechaHora from "@/components/eventos/CampoFechaHora";
 import SubirFlyer, { BorradorFlyer } from "@/components/eventos/SubirFlyer";
 import FotoEvento from "@/components/eventos/FotoEvento";
+import VistaPreviaEvento from "@/components/eventos/VistaPreviaEvento";
 import VistaPreviaFoto from "@/components/eventos/VistaPreviaFoto";
 import {
   EstadoFoto,
@@ -40,10 +43,12 @@ import {
   LugarEvento,
 } from "@/lib/eventos";
 import {
+  ahoraBoliviaParaFormulario,
   CamposFormularioEvento,
   fechaBoliviaParaFormulario,
   formDataEvento,
   FOTO_EVENTO_MAX_BYTES,
+  motivosDeRevision,
   presentacionEvento,
   validarFotoEvento,
   validarFormularioEvento,
@@ -296,6 +301,11 @@ function Eventos({ inicial }: { inicial: Pestana }) {
   const faltan = camposQueFaltan(marcados, campos);
   const publicados = eventos.filter((e) => e.estado === "PUBLICADO").length;
   const enRevision = eventos.filter((e) => e.estado === "PENDIENTE").length;
+  const revision = motivosDeRevision(campos.inicio, campos.fin, Boolean(seleccion), Boolean(campos.lugarTexto.trim()), ahoraBoliviaParaFormulario());
+  const opcionesLugar = [
+    ...lugares.map((lugar) => ({ valor: String(lugar.id), etiqueta: lugar.nombre })),
+    { valor: OTRO_LUGAR, etiqueta: "Otro lugar (lo escribo yo)" },
+  ];
   const avisoLugar = desdeFlyer && editando === null ? avisoLugarFueraDelCatalogo(campos) : null;
   const marcaFalta = (campo: CampoFormulario) =>
     faltan.has(campo) ? <em className={estilos.falta}>falta</em> : null;
@@ -350,6 +360,7 @@ function Eventos({ inicial }: { inicial: Pestana }) {
       </AnimatePresence>
 
       {pestana === "crear" ? (
+        <div className={estilos.zonaCrear}>
         <Pieza as="section" className={estilos.tarjeta}>
           <div className={estilos.encabezadoFormulario}>
             <div>
@@ -384,24 +395,28 @@ function Eventos({ inicial }: { inicial: Pestana }) {
             </label>
 
             <div className={estilos.dosColumnas}>
-              <label className={estilos.campo}>
+              <div className={estilos.campo} role="group" aria-label="Empieza">
                 <span>Empieza <b>*</b> {marcaFalta("inicio")}</span>
-                <input type="datetime-local" value={campos.inicio} required aria-invalid={faltan.has("inicio") || undefined} onChange={(e) => cambiar("inicio", e.target.value)} />
-              </label>
-              <label className={estilos.campo}>
+                <CampoFechaHora nombre="inicio" valor={campos.inicio} invalido={faltan.has("inicio")} onCambio={(v) => cambiar("inicio", v)} />
+              </div>
+              <div className={estilos.campo} role="group" aria-label="Termina">
                 <span>Termina <b>*</b> {marcaFalta("fin")}</span>
-                <input type="datetime-local" value={campos.fin} required aria-invalid={faltan.has("fin") || undefined} onChange={(e) => cambiar("fin", e.target.value)} />
-              </label>
+                <CampoFechaHora nombre="fin" valor={campos.fin} invalido={faltan.has("fin")} onCambio={(v) => cambiar("fin", v)} />
+              </div>
             </div>
-            <p className={estilos.ayuda}>Las fechas se interpretan en hora de Bolivia (UTC−4). Un horario fuera del campus quedará en revisión.</p>
+            <p className={estilos.ayuda}>Hora de Bolivia. Entre las 07:15 y las 21:00 del mismo día se publica al instante; fuera de ese horario pasa por revisión.</p>
 
-            <label className={estilos.campo}>
-              <span>Lugar <b>*</b> {marcaFalta("lugar")}</span>
-              <select value={campos.lugarId} aria-invalid={faltan.has("lugar") || undefined} onChange={(e) => cambiar("lugarId", e.target.value)}>
-                <option value="">Elige un lugar del catálogo o escribe uno</option>
-                {lugares.map((lugar) => <option key={lugar.id} value={lugar.id}>{lugar.nombre}</option>)}
-              </select>
-            </label>
+            <div className={estilos.campo}>
+              <span id="etiqueta-lugar">Lugar <b>*</b> {marcaFalta("lugar")}</span>
+              <Selector
+                valor={campos.lugarId || (campos.lugarTexto ? OTRO_LUGAR : "")}
+                opciones={opcionesLugar}
+                onCambio={(v) => cambiar("lugarId", v === OTRO_LUGAR ? "" : v)}
+                etiqueta="Lugar"
+                placeholder="Elige un lugar del catálogo o escribe uno"
+                invalido={faltan.has("lugar")}
+              />
+            </div>
             {!seleccion && (
               <label className={estilos.campo}>
                 <span>Nombre del lugar <b>*</b></span>
@@ -436,13 +451,13 @@ function Eventos({ inicial }: { inicial: Pestana }) {
             )}
 
             {vistaDeFoto === "actual" && fotoActual && (
-              <figure className={estilos.fotoVista}>
+              <figure className={`${estilos.fotoVista} ${estilos.soloAngosto}`}>
                 <figcaption>Foto actual del evento</figcaption>
                 <FotoEvento ruta={fotoActual} titulo={campos.titulo || "el evento"} />
               </figure>
             )}
             {vistaDeFoto === "nueva" && foto && (
-              <figure className={estilos.fotoVista}>
+              <figure className={`${estilos.fotoVista} ${estilos.soloAngosto}`}>
                 <figcaption>{editando === null ? "Foto del evento" : "Foto nueva (se guardará al guardar los cambios)"}</figcaption>
                 <VistaPreviaFoto archivo={foto} titulo={campos.titulo || "el evento"} />
               </figure>
@@ -450,9 +465,14 @@ function Eventos({ inicial }: { inicial: Pestana }) {
             {vistaDeFoto === "quitada" && <p className={estilos.aviso} role="status">La foto actual se quitará al guardar los cambios.</p>}
             {editando !== null && vistaDeFoto === "ninguna" && <p className={estilos.ayudaFoto}>Este evento todavía no tiene foto.</p>}
 
-            <label className={estilos.campo}>
+            <label className={`${estilos.campo} ${estilos.campoFoto}`}>
               <span>{editando === null ? "Foto" : "Cambiar foto"} <small>(opcional; JPG o PNG, hasta 2 MB)</small></span>
-              <input key={claveFoto} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(e) => {
+              <span className={estilos.zonaFoto}>
+                <IconoCamara tamano={20} />
+                <span>{foto ? "Elegir otra foto" : "Elegir una foto"}</span>
+                <small>{foto ? foto.name : "Una imagen ayuda a que más gente se anime"}</small>
+              </span>
+              <input key={claveFoto} className={estilos.archivoOculto} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(e) => {
                 turnoFoto.current += 1; // lo que el estudiante elige gana sobre la foto del afiche que se esté preparando
                 setPreparandoFoto(false);
                 const archivo = e.target.files?.[0] ?? null;
@@ -467,7 +487,7 @@ function Eventos({ inicial }: { inicial: Pestana }) {
                 setFoto(archivo);
               }} />
               {preparandoFoto && <small className={estilos.ayuda}>Preparando la foto del afiche…</small>}
-              {foto && <small className={estilos.ayuda}>{foto.name} · {(foto.size / 1024).toFixed(0)} KB de {FOTO_EVENTO_MAX_BYTES / 1024} KB</small>}
+              {foto && <small className={estilos.ayuda}>{(foto.size / 1024).toFixed(0)} KB de {FOTO_EVENTO_MAX_BYTES / 1024} KB</small>}
             </label>
             {(accionesDeFoto.quitar || accionesDeFoto.descartarNueva || accionesDeFoto.deshacer) && (
               <div className={estilos.accionesFoto}>
@@ -493,6 +513,22 @@ function Eventos({ inicial }: { inicial: Pestana }) {
             </div>
           </form>
         </Pieza>
+        <aside className={estilos.lateral} aria-label="Vista previa del evento">
+          <VistaPreviaEvento
+            titulo={campos.titulo}
+            descripcion={campos.descripcion}
+            inicio={campos.inicio}
+            fin={campos.fin}
+            lugar={seleccion?.nombre ?? campos.lugarTexto.trim()}
+            revision={revision}
+            asistencia={campos.asistencia}
+            visitaMin={campos.visitaMin}
+            visitaMax={campos.visitaMax}
+            fotoNueva={vistaDeFoto === "nueva" ? foto : null}
+            fotoActual={vistaDeFoto === "actual" ? fotoActual : null}
+          />
+        </aside>
+        </div>
       ) : (
         <section className={estilos.lista} aria-busy={cargando}>
           <div className={estilos.tituloLista}>
@@ -535,6 +571,9 @@ function Eventos({ inicial }: { inicial: Pestana }) {
     </Entrada>
   );
 }
+
+// Opción del selector de lugar para volver a escribir uno a mano (no es un id del catálogo).
+const OTRO_LUGAR = "otro";
 
 function imagenDelFlyer(borrador: BorradorFlyer): File | null {
   if (!borrador.imagen) return null;
