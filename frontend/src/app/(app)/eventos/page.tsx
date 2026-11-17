@@ -9,6 +9,7 @@ import { IconoCalendario, IconoCamara } from "@/components/app/Iconos";
 import { Selector } from "@/components/app/Selectores";
 import CampoFechaHora from "@/components/eventos/CampoFechaHora";
 import SubirFlyer, { BorradorFlyer } from "@/components/eventos/SubirFlyer";
+import EventosDelCampus from "@/components/eventos/EventosDelCampus";
 import FotoEvento from "@/components/eventos/FotoEvento";
 import VistaPreviaEvento from "@/components/eventos/VistaPreviaEvento";
 import VistaPreviaFoto from "@/components/eventos/VistaPreviaFoto";
@@ -57,7 +58,7 @@ import { formatearFechaHora } from "@/lib/reglasFlyer";
 import { useRefrescoAutomatico } from "@/lib/useRefrescoAutomatico";
 import estilos from "./eventos.module.css";
 
-type Pestana = "crear" | "mios";
+type Pestana = "campus" | "crear" | "mios";
 type Campos = CamposFormularioEvento & { descripcion: string };
 
 const CAMPOS_VACIOS: Campos = {
@@ -89,7 +90,7 @@ export default function EventosPage() {
 
 // La campanita lleva a «Mis eventos» con ?pestana=mios (cuando el admin aprueba o rechaza uno).
 function EventosDesdeEnlace() {
-  const inicial: Pestana = useSearchParams().get("pestana") === "mios" ? "mios" : "crear";
+  const inicial: Pestana = useSearchParams().get("pestana") === "mios" ? "mios" : "campus";
   return <Eventos key={inicial} inicial={inicial} />;
 }
 
@@ -338,6 +339,9 @@ function Eventos({ inicial }: { inicial: Pestana }) {
       </Pieza>
 
       <div className={estilos.pestanas} role="tablist" aria-label="Secciones de eventos">
+        <button type="button" role="tab" aria-selected={pestana === "campus"} className={pestana === "campus" ? estilos.pestanaActiva : estilos.pestana} onClick={() => setPestana("campus")}>
+          Del campus
+        </button>
         <button type="button" role="tab" aria-selected={pestana === "crear"} className={pestana === "crear" ? estilos.pestanaActiva : estilos.pestana} onClick={() => setPestana("crear")}>
           {editando === null ? "Crear evento" : "Editar evento"}
         </button>
@@ -359,7 +363,9 @@ function Eventos({ inicial }: { inicial: Pestana }) {
         )}
       </AnimatePresence>
 
-      {pestana === "crear" ? (
+      {pestana === "campus" ? (
+        <EventosDelCampus />
+      ) : pestana === "crear" ? (
         <div className={estilos.zonaCrear}>
         <Pieza as="section" className={estilos.tarjeta}>
           <div className={estilos.encabezadoFormulario}>

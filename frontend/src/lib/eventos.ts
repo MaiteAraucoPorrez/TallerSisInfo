@@ -74,3 +74,25 @@ export const moderarEvento = (id: number, decision: DecidirEvento) =>
     method: "PATCH",
     body: JSON.stringify(decision),
   });
+
+/** HU22: evento publicado que ve cualquier estudiante. No trae estado ni motivo: eso es solo de moderacion. */
+export type EventoPublico = {
+  id: number;
+  titulo: string;
+  descripcion: string | null;
+  inicio: string;
+  fin: string;
+  lugarId: number | null;
+  lugar: string;
+  fueraDelCampus: boolean;
+  asistencia: "FIJA" | "LIBRE";
+  visitaMin: number | null;
+  visitaMax: number | null;
+  fotoUrl: string | null;
+};
+
+export type RangoEventos = "hoy" | "semana";
+
+export const listarEventosDelCampus = (rango: RangoEventos) =>
+  pedirApi<EventoPublico[]>(`/api/eventos?rango=${rango}`);
+export const obtenerEventoDelCampus = (id: number) => pedirApi<EventoPublico>(`/api/eventos/${id}`);
