@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from "motion/react";
-import { IconoBandera, IconoPersonas, IconoRayo as IconoRayoApp } from "@/components/app/Iconos";
+import { IconoBandera, IconoCalendario, IconoPersonas, IconoRayo as IconoRayoApp } from "@/components/app/Iconos";
 import { SALIDA } from "@/components/app/Movimiento";
 import {
   INTERVALO_CONSULTA_MS,
@@ -14,6 +14,7 @@ import {
   obtenerConfiguracion,
 } from "@/lib/notificaciones";
 import { hhmm } from "@/lib/puentes";
+import { IconoNotificacion, presentacionNotificacion } from "@/lib/reglasNotificaciones";
 import { enlaceMisReportes } from "@/lib/reglasReportes";
 import { useAlReconectar, useEventoEnVivo } from "@/lib/tiempoReal";
 import estilos from "./Notificaciones.module.css";
@@ -58,22 +59,17 @@ function IconoCerrar() {
   );
 }
 
-const TIPOS = {
-  PUENTE_DISPONIBLE: { titulo: "Puente disponible", clase: "puente", Icono: IconoRayoApp },
-  DESPUES_DE_CLASES: { titulo: "Terminaste tus clases", clase: "puente", Icono: IconoRayoApp },
-  INVITACION_COMUNIDAD: { titulo: "Invitación a una comunidad", clase: "invitacion", Icono: IconoPersonas },
-  COMUNIDAD_CERRADA: { titulo: "El grupo se llenó", clase: "cerrada", Icono: IconoPersonas },
-  // HU28: la advertencia del administrador. No lleva a otra pantalla: el aviso ya dice el motivo.
-  SANCION_ADVERTENCIA: { titulo: "Advertencia del administrador", clase: "advertencia", Icono: IconoBandera },
-  // HU12: saludos de «Libres contigo». Llevan a esa pestaña, donde se responden o se ve el correo.
-  CONEXION_SOLICITADA: { titulo: "Alguien quiere conocerte", clase: "invitacion", Icono: IconoPersonas },
-  CONEXION_ACEPTADA: { titulo: "Aceptaron tu saludo", clase: "invitacion", Icono: IconoPersonas },
-  // HU27: un administrador revisó tu reporte. Lleva a «Mis reportes», donde está la respuesta completa.
-  REPORTE_RESUELTO: { titulo: "Revisamos tu reporte", clase: "reporte", Icono: IconoBandera },
-} as const;
+// Título, estilo e ícono de cada tipo: ver lib/reglasNotificaciones.ts (un tipo desconocido usa uno genérico).
+const ICONOS: Record<IconoNotificacion, typeof IconoRayoApp> = {
+  rayo: IconoRayoApp,
+  personas: IconoPersonas,
+  bandera: IconoBandera,
+  calendario: IconoCalendario,
+};
 
 function rutaDe(n: Notificacion): string {
   if (n.tipo === "REPORTE_RESUELTO") return enlaceMisReportes(n.reporteId);
+  if (n.tipo === "EVENTO_APROBADO" || n.tipo === "EVENTO_RECHAZADO") return "/eventos";
   if (n.tipo === "CONEXION_SOLICITADA" || n.tipo === "CONEXION_ACEPTADA") return "/comunidades?pestana=libres";
   if (n.tipo === "PUENTE_DISPONIBLE" || n.tipo === "DESPUES_DE_CLASES") return n.duracionMinutos ? `/recomendaciones?min=${n.duracionMinutos}` : "/recomendaciones";
   return n.comunidadId ? `/comunidades?pestana=descubrir&comunidad=${n.comunidadId}` : "/comunidades?pestana=descubrir";
@@ -358,7 +354,8 @@ export default function Notificaciones({ recarga }: Props) {
                       >
                         <AnimatePresence initial={false}>
                           {visibles.map((n) => {
-                            const tipo = TIPOS[n.tipo];
+                            const tipo = presentacionNotificacion(n.tipo);
+                            const Icono = ICONOS[tipo.icono];
                             return (
                               <motion.li
                                 key={n.id}
@@ -371,7 +368,7 @@ export default function Notificaciones({ recarga }: Props) {
                                 exit={{ opacity: 0, x: 24, transition: { duration: 0.2 } }}
                               >
                                 <span className={estilos.itemIcono} aria-hidden="true">
-                                  <tipo.Icono tamano={18} />
+                                  <Icono tamano={18} />
                                 </span>
                                 <div className={estilos.itemTexto}>
                                   <strong>
@@ -447,7 +444,7 @@ export default function Notificaciones({ recarga }: Props) {
                     <IconoRayo />
                   </span>
                   <div className={estilos.emergenteTexto}>
-                    <strong>{emergente.tipo === "PUENTE_DISPONIBLE" ? "¡Puente disponible!" : (TIPOS[emergente.tipo]?.titulo ?? "Nuevo aviso")}</strong>
+                    <strong>{emergente.tipo === "PUENTE_DISPONIBLE" ? "¡Puente disponible!" : presentacionNotificacion(emergente.tipo).titulo}</strong>
                     {emergente.duracionMinutos !== null && emergente.horaInicio && emergente.horaFin ? (
                       <span>
                         Tienes <b>{formatearDuracion(emergente.duracionMinutos)}</b> libres, de {hhmm(emergente.horaInicio)} a{" "}

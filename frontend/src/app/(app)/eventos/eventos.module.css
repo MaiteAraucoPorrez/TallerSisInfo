@@ -1,0 +1,445 @@
+.pagina {
+  width: min(940px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.portada {
+  padding: clamp(24px, 5vw, 42px);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255, 207, 53, 0.25), transparent 34%),
+    linear-gradient(135deg, var(--ucb-marino), #0c5d80);
+  color: white;
+  box-shadow: var(--sombra-3);
+}
+
+.etiqueta {
+  display: inline-flex;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  color: #ffdd73;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portada h1 {
+  margin: 18px 0 8px;
+  font-family: var(--fuente-titulo), system-ui, sans-serif;
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  letter-spacing: -0.04em;
+}
+
+.portada p {
+  max-width: 650px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.65;
+}
+
+.pestanas {
+  display: flex;
+  gap: 8px;
+  margin: 22px 0 16px;
+  padding: 5px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pestana,
+.pestanaActiva {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--texto-suave);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pestana span {
+  margin-left: 6px;
+  color: var(--texto-tenue);
+}
+
+.pestanaActiva {
+  background: var(--superficie);
+  color: var(--ucb-marino);
+  box-shadow: var(--sombra-1);
+}
+
+.tarjeta,
+.lista {
+  padding: clamp(18px, 4vw, 32px);
+  border: 1px solid var(--borde-suave);
+  border-radius: 24px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-2);
+}
+
+.encabezadoFormulario,
+.tituloLista {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.encabezadoFormulario h2,
+.tituloLista h2 {
+  margin: 0 0 6px;
+  color: var(--ucb-marino);
+  font-family: var(--fuente-titulo), system-ui, sans-serif;
+  font-size: 1.45rem;
+}
+
+.encabezadoFormulario p,
+.tituloLista p {
+  margin: 0;
+  color: var(--texto-tenue);
+  line-height: 1.5;
+}
+
+.formulario {
+  display: grid;
+  gap: 18px;
+}
+
+.campo {
+  display: grid;
+  gap: 8px;
+  color: var(--texto);
+  font-weight: 700;
+}
+
+.campo b {
+  color: var(--error);
+}
+
+.campo > span small {
+  color: var(--texto-tenue);
+  font-weight: 500;
+}
+
+.campo input,
+.campo textarea,
+.campo select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.campo textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.campo input:focus-visible,
+.campo textarea:focus-visible,
+.campo select:focus-visible,
+.botonPrimario:focus-visible,
+.botonSecundario:focus-visible,
+.botonPeligro:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+.contador {
+  justify-self: end;
+  color: var(--texto-tenue);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.dosColumnas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ayuda {
+  margin: -10px 0 0;
+  color: var(--texto-tenue);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.grupo {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 16px;
+}
+
+.grupo legend {
+  padding: 0 6px;
+  color: var(--ucb-marino);
+  font-weight: 800;
+}
+
+.opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+}
+
+.opcion input {
+  margin-top: 4px;
+  accent-color: var(--ucb-marino);
+}
+
+.opcion span {
+  display: grid;
+  gap: 3px;
+}
+
+.opcion strong {
+  color: var(--texto);
+}
+
+.opcion small {
+  color: var(--texto-tenue);
+}
+
+.accionesFormulario,
+.accionesEvento {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.botonPrimario,
+.botonSecundario,
+.botonPeligro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 43px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.botonPrimario {
+  background: var(--ucb-marino);
+  color: white;
+}
+
+.botonSecundario {
+  border-color: var(--borde-suave);
+  background: var(--superficie);
+  color: var(--ucb-marino);
+}
+
+.botonPeligro {
+  border-color: var(--error-fondo);
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.botonPrimario:hover:not(:disabled),
+.botonSecundario:hover:not(:disabled),
+.botonPeligro:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.botonPrimario:disabled,
+.botonSecundario:disabled,
+.botonPeligro:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error,
+.mensaje {
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border-radius: 13px;
+  line-height: 1.5;
+}
+
+.error {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.mensaje {
+  background: var(--exito-fondo);
+  color: var(--exito);
+}
+
+.lista {
+  display: grid;
+  gap: 14px;
+}
+
+.tituloLista {
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.evento {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 18px;
+}
+
+.fotoEvento {
+  width: 100%;
+  height: 150px;
+  border-radius: 13px;
+  object-fit: cover;
+  background: var(--fondo-suave);
+}
+
+.detalleEvento {
+  min-width: 0;
+}
+
+.tituloEvento {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tituloEvento h3 {
+  margin: 8px 0 0;
+  color: var(--ucb-marino);
+  font-size: 1.16rem;
+}
+
+.horario {
+  flex: 0 0 auto;
+  color: var(--texto-tenue);
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.estado {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.estadoPUBLICADO {
+  background: var(--exito-fondo);
+  color: var(--exito);
+}
+
+.estadoPENDIENTE {
+  background: #fff3cc;
+  color: #725600;
+}
+
+.estadoVENCIDO {
+  background: var(--fondo-suave);
+  color: var(--texto-suave);
+}
+
+.estadoRECHAZADO,
+.estadoCANCELADO {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.lugar {
+  margin: 10px 0 4px;
+  color: var(--texto-suave);
+  font-weight: 700;
+}
+
+.descripcionEvento {
+  margin: 8px 0;
+  color: var(--texto-suave);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.motivo {
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: #fff3cc;
+  color: #604900;
+  line-height: 1.5;
+}
+
+.vacio {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 36px 16px;
+  color: var(--texto-tenue);
+  text-align: center;
+}
+
+.vacio strong {
+  color: var(--ucb-marino);
+}
+
+@media (max-width: 640px) {
+  .pagina {
+    width: min(100% - 22px, 940px);
+    padding-top: 16px;
+  }
+
+  .encabezadoFormulario,
+  .tituloLista,
+  .tituloEvento {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .encabezadoFormulario .botonSecundario,
+  .tituloLista .botonSecundario {
+    align-self: flex-start;
+  }
+
+  .dosColumnas {
+    grid-template-columns: 1fr;
+  }
+
+  .evento {
+    grid-template-columns: 1fr;
+  }
+
+  .fotoEvento {
+    height: 190px;
+  }
+
+  .horario {
+    text-align: left;
+  }
+
+  .accionesFormulario > button,
+  .accionesEvento > button {
+    flex: 1;
+  }
+}

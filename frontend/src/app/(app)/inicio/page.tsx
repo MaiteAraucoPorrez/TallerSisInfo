@@ -16,6 +16,7 @@ import ArteCategoria from "@/components/inicio/ArteCategoria";
 import HeroePuente from "@/components/inicio/HeroePuente";
 import HeroeSinPuentes from "@/components/inicio/HeroeSinPuentes";
 import { ComunidadActiva, listarComunidades } from "@/lib/comunidades";
+import { EventoEnPuente, listarEventosEnPuente } from "@/lib/eventos";
 import { Bloque, listarHorario } from "@/lib/horario";
 import { LugarViable, ResultadoLugares, buscarLugaresViables } from "@/lib/lugares";
 import { ESTADOS_ANIMO } from "@/lib/maqueta";
@@ -88,6 +89,7 @@ export default function Inicio() {
   // Tus actividades de hoy (las que creaste y aquellas a las que te invitaron), de Comunidades → Descubrir.
   // null mientras carga o si falló: Inicio no muestra la tarjeta en vez de mostrar un error.
   const [actividades, setActividades] = useState<ComunidadActiva[] | null>(null);
+  const [eventosEnPuente, setEventosEnPuente] = useState<EventoEnPuente[] | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setAhora(new Date()), 30_000);
@@ -104,6 +106,21 @@ export default function Inicio() {
       if (h.status === "fulfilled") setBloques(h.value);
       setCargando(false);
     });
+    return () => {
+      activo = false;
+    };
+  }, [sesion]);
+
+  useEffect(() => {
+    if (!sesion) return;
+    let activo = true;
+    listarEventosEnPuente()
+      .then((eventos) => {
+        if (activo) setEventosEnPuente(eventos);
+      })
+      .catch(() => {
+        if (activo) setEventosEnPuente(null);
+      });
     return () => {
       activo = false;
     };
@@ -378,6 +395,32 @@ export default function Inicio() {
             </p>
           )}
           {actividades.length > 3 && <p className={estilos.nota}>Y {actividades.length - 3} más en Comunidades.</p>}
+        </Pieza>
+      )}
+
+      {eventosEnPuente && eventosEnPuente.length > 0 && (
+        <Pieza as="section" className={`${estilos.tarjeta} ${estilos.zonaEventos}`} aria-label="Eventos que caben en tus puentes de hoy">
+          <div className={estilos.encabezado}>
+            <h2 className={estilos.subtitulo}>Eventos en tu puente</h2>
+          </div>
+          <ul className={estilos.actividades}>
+            {eventosEnPuente.map((evento) => (
+              <li key={evento.id}>
+                <div className={`${estilos.actividad} ${estilos.eventoPuenteItem}`}>
+                  <span className={estilos.eventoPuenteTexto}>
+                    <strong>{evento.titulo}</strong>
+                    <small>
+                      <IconoReloj tamano={13} /> {evento.inicio}–{evento.fin} · <IconoPin tamano={13} /> {evento.lugar}
+                    </small>
+                    <span className={estilos.eventoExplicacion}>{evento.explicacion}</span>
+                  </span>
+                  <span className={estilos.actividadInvitada}>
+                    {evento.asistencia === "FIJA" ? "Hay que llegar a la hora" : `${evento.minutosPuedeQuedarse} min`}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Pieza>
       )}
 

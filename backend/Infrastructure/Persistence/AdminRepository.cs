@@ -197,7 +197,8 @@ public class AdminRepository : IAdminRepository
                 SELECT (SELECT COUNT(*) FROM lugar_recuperado WHERE lugar_id = {lugarId})
                      + (SELECT COUNT(*) FROM recomendacion     WHERE lugar_id = {lugarId})
                      + (SELECT COUNT(*) FROM reporte           WHERE lugar_id = {lugarId})
-                     + (SELECT COUNT(*) FROM comunidad_efimera WHERE lugar_id = {lugarId}) AS Value
+                     + (SELECT COUNT(*) FROM comunidad_efimera WHERE lugar_id = {lugarId})
+                     + (SELECT COUNT(*) FROM evento            WHERE lugar_id = {lugarId}) AS Value
                 """).ToListAsync(ct)).Single() > 0;
 
     public async Task<bool> EliminarLugarAsync(int lugarId, int adminId, CancellationToken ct = default)

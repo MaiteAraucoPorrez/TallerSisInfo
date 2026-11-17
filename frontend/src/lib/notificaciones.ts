@@ -10,7 +10,9 @@ export type Notificacion = {
     | "SANCION_ADVERTENCIA"
     | "CONEXION_SOLICITADA"
     | "CONEXION_ACEPTADA"
-    | "REPORTE_RESUELTO";
+    | "REPORTE_RESUELTO"
+    | "EVENTO_APROBADO"
+    | "EVENTO_RECHAZADO";
   mensaje: string;
   fecha: string | null;
   horaInicio: string | null;
