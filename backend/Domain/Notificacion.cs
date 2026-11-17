@@ -17,6 +17,10 @@ public class Notificacion
     public const string TipoConexionSolicitada = "CONEXION_SOLICITADA";
     /// <summary>HU12: la persona que saludaste aceptó; ya pueden ver su correo.</summary>
     public const string TipoConexionAceptada = "CONEXION_ACEPTADA";
+    /// <summary>Para el admin: un estudiante envió un reporte (migración 030).</summary>
+    public const string TipoReporteNuevo = "REPORTE_NUEVO";
+    /// <summary>Para el admin: un evento quedó pendiente de revisión (migración 030).</summary>
+    public const string TipoEventoPorRevisar = "EVENTO_POR_REVISAR";
 
     public long Id { get; set; }
     public int UsuarioId { get; set; }
