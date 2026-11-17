@@ -1,0 +1,9 @@
+bin/
+obj/
+Breaku.Tests/
+.env
+.env.*
+!.env.example
+*.http
+.vs/
+.vscode/
