@@ -70,3 +70,41 @@ export function formDataEvento(
   if (foto) datos.set("Foto", foto);
   return datos;
 }
+
+export type EstadoEvento = "PENDIENTE" | "PUBLICADO" | "RECHAZADO" | "CANCELADO";
+
+export type PresentacionEvento = {
+  clave: EstadoEvento | "VENCIDO";
+  etiqueta: string;
+  /** Solo se edita un evento PENDIENTE o PUBLICADO que todavía no empezó. */
+  editable: boolean;
+  /** Se puede cancelar mientras no esté cancelado ni haya empezado. */
+  cancelable: boolean;
+};
+
+const ETIQUETAS_EVENTO: Record<EstadoEvento, string> = {
+  PENDIENTE: "En revisión",
+  PUBLICADO: "Publicado",
+  RECHAZADO: "Rechazado",
+  CANCELADO: "Cancelado",
+};
+
+/**
+ * Cómo se muestra un evento propio. Un PENDIENTE cuyo fin ya pasó se ve como «Vencido»:
+ * es solo de presentación, el estado en el servidor no cambia.
+ */
+export function presentacionEvento(
+  estado: EstadoEvento,
+  inicio: string,
+  fin: string,
+  ahoraMs: number,
+): PresentacionEvento {
+  const empezo = new Date(inicio).getTime() <= ahoraMs;
+  const vencido = estado === "PENDIENTE" && new Date(fin).getTime() <= ahoraMs;
+  return {
+    clave: vencido ? "VENCIDO" : estado,
+    etiqueta: vencido ? "Vencido" : ETIQUETAS_EVENTO[estado],
+    editable: (estado === "PENDIENTE" || estado === "PUBLICADO") && !empezo,
+    cancelable: estado !== "CANCELADO" && !empezo,
+  };
+}

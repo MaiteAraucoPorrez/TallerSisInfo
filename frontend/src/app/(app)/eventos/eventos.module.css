@@ -359,6 +359,11 @@
   color: #725600;
 }
 
+.estadoVENCIDO {
+  background: var(--fondo-suave);
+  color: var(--texto-suave);
+}
+
 .estadoRECHAZADO,
 .estadoCANCELADO {
   background: var(--error-fondo);
