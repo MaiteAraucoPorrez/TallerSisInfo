@@ -1,0 +1,147 @@
+.vista {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--texto-tenue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tarjeta {
+  overflow: hidden;
+  border: 1px solid var(--borde-suave);
+  border-radius: 24px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-2);
+}
+
+/* La foto ocupa el ancho de la tarjeta (los componentes de foto traen 150 px de alto: aquí se agranda). */
+.foto > * {
+  display: block;
+  height: 210px;
+  border-radius: 0;
+}
+
+.sinFoto {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  height: 210px;
+  background:
+    radial-gradient(circle at 80% 15%, rgba(253, 213, 55, 0.28), transparent 45%),
+    linear-gradient(135deg, var(--ucb-marino), #0c5d80);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.sinFoto svg {
+  color: var(--ucb-amarillo);
+}
+
+.cuerpo {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 18px 20px 22px;
+}
+
+.cuerpo h3 {
+  margin: 0;
+  color: var(--ucb-marino);
+  font-size: 1.3rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.chip,
+.chipRevision {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.chip {
+  background: var(--exito-fondo);
+  color: var(--exito);
+}
+
+.chipRevision {
+  background: #fff3cc;
+  color: #725600;
+}
+
+.datos {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--texto-suave);
+  font-weight: 700;
+}
+
+.datos li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.datos svg {
+  flex-shrink: 0;
+  color: var(--ucb-celeste);
+}
+
+.descripcion {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--texto-suave);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.asistencia {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--fondo-suave);
+  color: var(--ucb-marino);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.cuerpo .tenue {
+  color: var(--texto-tenue);
+  font-weight: 600;
+}
+
+.nota {
+  margin: 0;
+  color: var(--texto-tenue);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.nota strong {
+  color: #604900;
+}
+
+.nota ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}

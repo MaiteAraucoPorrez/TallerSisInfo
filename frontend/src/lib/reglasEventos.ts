@@ -17,7 +17,9 @@ export function validarFormularioEvento(campos: CamposFormularioEvento): string 
   if (!campos.titulo.trim()) return "Escribe el título del evento.";
   if (campos.titulo.trim().length > 120) return "El título no puede superar 120 caracteres.";
   if (!campos.inicio) return "Indica la fecha y hora de inicio.";
+  if (!fechaHoraCompleta(campos.inicio)) return "Completa la fecha y la hora de inicio.";
   if (!campos.fin) return "Indica la fecha y hora de fin.";
+  if (!fechaHoraCompleta(campos.fin)) return "Completa la fecha y la hora de fin.";
   if (!campos.lugarId && !campos.lugarTexto.trim()) return "Elige un lugar o escribe dónde será el evento.";
   if (campos.lugarTexto.trim().length > 150) return "El lugar no puede superar 150 caracteres.";
   if (campos.asistencia === "") return "Elige si hay que llegar a la hora o si se puede pasar un rato.";
@@ -52,6 +54,76 @@ export function fechaBoliviaParaFormulario(valor: string): string {
 
 export function ahoraBoliviaParaFormulario(ahora = new Date()): string {
   return new Date(ahora.getTime() - 4 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
+// Fecha y hora con los selectores de la app (sin el control nativo): el campo guarda «AAAA-MM-DDTHH:mm» y, mientras
+// falta una de las dos partes, «AAAA-MM-DDT» o «THH:mm» (así no se pierde lo que ya eligió).
+const FECHA_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
+export const fechaHoraCompleta = (valor: string): boolean => FECHA_HORA.test(valor);
+
+export function partirFechaHora(valor: string): { fecha: string; hora: string } {
+  const [fecha = "", hora = ""] = valor.split("T");
+  return { fecha, hora: hora.slice(0, 5) };
+}
+
+export function unirFechaHora(fecha: string, hora: string): string {
+  return fecha || hora ? `${fecha}T${hora}` : "";
+}
+
+const DIAS_CORTOS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/** «mié 19 nov» (con el año si no es el de `hoy`). Las fechas son de calendario: se leen en UTC para no correrse de día. */
+export function etiquetaFecha(fecha: string, hoy: string): string {
+  const d = new Date(`${fecha}T00:00:00Z`);
+  const base = `${DIAS_CORTOS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES_CORTOS[d.getUTCMonth()]}`;
+  return fecha.slice(0, 4) === hoy.slice(0, 4) ? base : `${base} ${fecha.slice(0, 4)}`;
+}
+
+/**
+ * Días para elegir, desde `hoy` (fecha de Bolivia) y `dias` hacia adelante: «Hoy · mar 17 nov», «Mañana · …», «jue 19 nov».
+ * `extra` (la fecha de un evento que se edita o de un afiche) se agrega en orden si queda fuera de la lista.
+ */
+export function opcionesDeFecha(hoy: string, dias = 120, extra = ""): { valor: string; etiqueta: string }[] {
+  const inicio = Date.parse(`${hoy}T00:00:00Z`);
+  const dia = (i: number) => new Date(inicio + i * 86_400_000).toISOString().slice(0, 10);
+  const fechas = Array.from({ length: dias }, (_, i) => dia(i));
+  if (/^\d{4}-\d{2}-\d{2}$/.test(extra) && !fechas.includes(extra)) fechas.push(extra);
+  fechas.sort((a, b) => a.localeCompare(b));
+  const relativos = new Map([[dia(0), "Hoy"], [dia(1), "Mañana"]]);
+  return fechas.map((fecha) => {
+    const etiqueta = etiquetaFecha(fecha, hoy);
+    const relativo = relativos.get(fecha);
+    return { valor: fecha, etiqueta: relativo ? `${relativo} · ${etiqueta}` : etiqueta };
+  });
+}
+
+/**
+ * Por qué el evento pasaría por revisión, igual que `ReglasEvento.DecidirPublicacion` del backend (sin el filtro de
+ * contenido, que solo corre en el servidor): lugar fuera del catálogo, horario fuera de 07:15–21:00 o en dos días, o
+ * inicio que ya pasó. `ahora` en formato de formulario (hora de Bolivia).
+ */
+export function motivosDeRevision(inicio: string, fin: string, lugarDelCatalogo: boolean, lugarEscrito: boolean, ahora: string): string[] {
+  const motivos: string[] = [];
+  if (fechaHoraCompleta(inicio) && inicio <= ahora) motivos.push("La fecha de inicio ya pasó.");
+  if (fechaHoraCompleta(inicio) && fechaHoraCompleta(fin)) {
+    const a = partirFechaHora(inicio);
+    const b = partirFechaHora(fin);
+    if (a.fecha !== b.fecha || a.hora < "07:15" || b.hora > "21:00") motivos.push("Es fuera del horario del campus (07:15 a 21:00).");
+  }
+  if (!lugarDelCatalogo && lugarEscrito) motivos.push("El lugar no está en el catálogo.");
+  return motivos;
+}
+
+/** «mié 19 nov, 17:00 – 18:30» o, si termina otro día, con las dos fechas. Vacío si falta algo. */
+export function rangoLegible(inicio: string, fin: string, hoy: string): string {
+  if (!fechaHoraCompleta(inicio)) return "";
+  const a = partirFechaHora(inicio);
+  const desde = `${etiquetaFecha(a.fecha, hoy)}, ${a.hora}`;
+  if (!fechaHoraCompleta(fin)) return desde;
+  const b = partirFechaHora(fin);
+  return b.fecha === a.fecha ? `${desde} – ${b.hora}` : `${desde} – ${etiquetaFecha(b.fecha, hoy)}, ${b.hora}`;
 }
 
 export function formDataEvento(

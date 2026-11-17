@@ -1,0 +1,13 @@
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 0.55fr);
+  gap: 10px;
+}
+
+.fila > * {
+  min-width: 0;
+}
+
+.hora {
+  width: 100%;
+}

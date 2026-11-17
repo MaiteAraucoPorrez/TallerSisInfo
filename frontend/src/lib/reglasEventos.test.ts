@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   ahoraBoliviaParaFormulario,
+  etiquetaFecha,
+  fechaHoraCompleta,
+  motivosDeRevision,
+  opcionesDeFecha,
+  partirFechaHora,
+  rangoLegible,
+  unirFechaHora,
   fechaBoliviaParaApi,
   formDataEvento,
   presentacionEvento,
@@ -87,4 +94,48 @@ test("un PENDIENTE vigente sigue en revisión y los demás estados no se marcan 
   assert.equal(presentacionEvento("PENDIENTE", FUTURO.inicio, FUTURO.fin, AHORA).etiqueta, "En revisión");
   assert.equal(presentacionEvento("PUBLICADO", PASADO.inicio, PASADO.fin, AHORA).clave, "PUBLICADO");
   assert.equal(presentacionEvento("RECHAZADO", PASADO.inicio, PASADO.fin, AHORA).etiqueta, "Rechazado");
+});
+
+test("fecha y hora: se arman por partes y solo valen completas", () => {
+  assert.equal(unirFechaHora("2026-11-20", ""), "2026-11-20T");
+  assert.equal(unirFechaHora("", "17:00"), "T17:00");
+  assert.equal(unirFechaHora("", ""), "");
+  assert.deepEqual(partirFechaHora("2026-11-20T17:30"), { fecha: "2026-11-20", hora: "17:30" });
+  assert.deepEqual(partirFechaHora("T09:05"), { fecha: "", hora: "09:05" });
+  assert.equal(fechaHoraCompleta("2026-11-20T17:30"), true);
+  assert.equal(fechaHoraCompleta("2026-11-20T"), false);
+  assert.equal(fechaHoraCompleta("T17:30"), false);
+});
+
+test("el formulario pide completar la fecha o la hora que falta", () => {
+  assert.equal(validarFormularioEvento({ ...CAMPOS, inicio: "2026-11-17T" }), "Completa la fecha y la hora de inicio.");
+  assert.equal(validarFormularioEvento({ ...CAMPOS, fin: "T14:00" }), "Completa la fecha y la hora de fin.");
+});
+
+test("días para elegir: hoy, mañana y los siguientes; la fecha de un evento viejo se agrega en orden", () => {
+  const opciones = opcionesDeFecha("2026-11-17", 3);
+  assert.deepEqual(opciones.map((o) => o.etiqueta), ["Hoy · mar 17 nov", "Mañana · mié 18 nov", "jue 19 nov"]);
+  const conExtra = opcionesDeFecha("2026-11-17", 2, "2026-11-10");
+  assert.deepEqual(conExtra.map((o) => o.valor), ["2026-11-10", "2026-11-17", "2026-11-18"]);
+  assert.equal(opcionesDeFecha("2026-11-17", 2, "2026-11-18").length, 2);
+  assert.equal(etiquetaFecha("2027-01-04", "2026-11-17"), "lun 4 ene 2027");
+});
+
+test("rango legible para la vista previa", () => {
+  assert.equal(rangoLegible("2026-11-19T17:00", "2026-11-19T18:30", "2026-11-17"), "jue 19 nov, 17:00 – 18:30");
+  assert.equal(rangoLegible("2026-11-19T22:00", "2026-11-20T01:00", "2026-11-17"), "jue 19 nov, 22:00 – vie 20 nov, 01:00");
+  assert.equal(rangoLegible("2026-11-19T17:00", "", "2026-11-17"), "jue 19 nov, 17:00");
+  assert.equal(rangoLegible("2026-11-19T", "", "2026-11-17"), "");
+});
+
+test("motivos de revisión, como en el backend", () => {
+  const ahora = "2026-11-17T10:00";
+  assert.deepEqual(motivosDeRevision("2026-11-18T17:00", "2026-11-18T18:00", true, false, ahora), []);
+  assert.deepEqual(motivosDeRevision("2026-11-18T17:00", "2026-11-18T18:00", false, true, ahora), ["El lugar no está en el catálogo."]);
+  assert.deepEqual(motivosDeRevision("2026-11-18T07:00", "2026-11-18T08:00", true, false, ahora), ["Es fuera del horario del campus (07:15 a 21:00)."]);
+  assert.deepEqual(motivosDeRevision("2026-11-18T20:00", "2026-11-18T21:30", true, false, ahora), ["Es fuera del horario del campus (07:15 a 21:00)."]);
+  assert.deepEqual(motivosDeRevision("2026-11-18T20:00", "2026-11-19T09:00", true, false, ahora), ["Es fuera del horario del campus (07:15 a 21:00)."]);
+  assert.deepEqual(motivosDeRevision("2026-11-17T09:00", "2026-11-17T11:00", true, false, ahora), ["La fecha de inicio ya pasó."]);
+  // Sin lugar todavía (ni del catálogo ni escrito) o con la fecha a medias, no se adelanta nada.
+  assert.deepEqual(motivosDeRevision("2026-11-18T", "", false, false, ahora), []);
 });

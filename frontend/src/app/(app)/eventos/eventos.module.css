@@ -1,7 +1,10 @@
+/* Mismo ancho y márgenes que Campus: la pantalla aprovecha el espacio en la laptop en vez de quedar en una columna angosta. */
 .pagina {
-  width: min(940px, calc(100% - 32px));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1680px;
   margin: 0 auto;
-  padding: 28px 0 48px;
+  padding: 20px 16px 120px;
 }
 
 /* Portada con foto (como Horario, Campus y Comunidades): un evento de noche en el campus, solo de esta pantalla. */
@@ -71,8 +74,10 @@
 }
 
 .pestanas {
+  box-sizing: border-box;
   display: flex;
   gap: 8px;
+  width: min(100%, 520px);
   margin: 22px 0 16px;
   padding: 5px;
   border: 1px solid var(--borde-suave);
@@ -142,6 +147,13 @@
   gap: 18px;
 }
 
+/* Los campos se achican con la pantalla (sin esto, el más ancho empuja el formulario fuera del celular). */
+.formulario > *,
+.dosColumnas > *,
+.campo > * {
+  min-width: 0;
+}
+
 .campo {
   display: grid;
   gap: 8px;
@@ -207,6 +219,11 @@
   line-height: 1.5;
 }
 
+/* Dentro de un campo (debajo de su caja) ya hay separación: sin el margen negativo. */
+.campo .ayuda {
+  margin-top: 0;
+}
+
 /* HU24 parte 2: avisos del afiche y campos que la IA no pudo leer. */
 .aviso {
   margin: 0 0 18px;
@@ -270,17 +287,21 @@
   font-weight: 700;
 }
 
+/* Las dos opciones de asistencia son tarjetas lado a lado (sin el recuadro del fieldset alrededor). */
 .grupo {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+  min-width: 0;
   margin: 0;
-  padding: 16px;
-  border: 1px solid var(--borde-suave);
+  padding: 0;
+  border: 0;
   border-radius: 16px;
 }
 
 .grupo legend {
-  padding: 0 6px;
+  margin-bottom: 8px;
+  padding: 0;
   color: var(--ucb-marino);
   font-weight: 800;
 }
@@ -289,12 +310,39 @@
   display: flex;
   align-items: flex-start;
   gap: 11px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde-suave);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.opcion:has(input:checked) {
+  border-color: var(--ucb-marino);
+  background: var(--fondo-suave);
+}
+
+/* Círculo propio en vez del radio nativo. */
+.opcion input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  border: 2px solid var(--borde);
+  border-radius: 50%;
+  background: var(--superficie);
+  appearance: none;
   cursor: pointer;
 }
 
-.opcion input {
-  margin-top: 4px;
-  accent-color: var(--ucb-marino);
+.opcion input:checked {
+  border-color: var(--ucb-marino);
+  background: radial-gradient(circle, var(--ucb-marino) 0 4px, var(--superficie) 5px);
+}
+
+.opcion input:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
 }
 
 .opcion span {
@@ -385,7 +433,96 @@
 
 .lista {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
   gap: 14px;
+}
+
+.lista > .tituloLista,
+.lista > .vacio {
+  grid-column: 1 / -1;
+}
+
+/* Crear: formulario a la izquierda y, en pantallas anchas, la vista previa fija a la derecha. */
+.zonaCrear {
+  display: grid;
+  gap: 24px;
+}
+
+.zonaCrear > * {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .zonaCrear {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+    align-items: start;
+  }
+  .lateral {
+    position: sticky;
+    top: 96px;
+  }
+  /* La foto ya se ve en la vista previa. */
+  .soloAngosto {
+    display: none;
+  }
+}
+
+/* Foto: zona propia en vez del botón nativo «Seleccionar archivo». */
+.zonaFoto {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 16px 18px;
+  border: 1.5px dashed var(--borde);
+  border-radius: 16px;
+  background: var(--fondo-suave);
+  color: var(--ucb-marino);
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.zonaFoto svg {
+  grid-row: span 2;
+  color: var(--ucb-celeste);
+}
+
+.zonaFoto > span {
+  font-weight: 800;
+}
+
+.zonaFoto small {
+  overflow: hidden;
+  color: var(--texto-tenue);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campoFoto:focus-within .zonaFoto {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .zonaFoto:hover {
+    border-color: var(--ucb-celeste);
+    background: var(--superficie);
+  }
+}
+
+/* `.campo input` da ancho y relleno a todos los inputs: aquí se anulan para que el input real no ocupe lugar. */
+.campo .archivoOculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .tituloLista {
@@ -502,12 +639,20 @@
   color: var(--ucb-marino);
 }
 
-@media (max-width: 640px) {
+@media (min-width: 720px) {
   .pagina {
-    width: min(100% - 22px, 940px);
-    padding-top: 16px;
+    padding-top: 32px;
   }
+}
 
+@media (min-width: 1025px) {
+  .pagina {
+    padding-left: clamp(16px, 3vw, 48px);
+    padding-right: clamp(16px, 3vw, 48px);
+  }
+}
+
+@media (max-width: 640px) {
   .encabezadoFormulario,
   .tituloLista,
   .tituloEvento {
