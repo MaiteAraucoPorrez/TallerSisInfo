@@ -8,7 +8,9 @@ using Breaku.Application.DTOs;
 using Breaku.Domain.Rules;
 using Microsoft.AspNetCore.RateLimiting;
 using Breaku.Infrastructure;
+using Breaku.Presentation.Despliegue;
 using Breaku.Presentation.Documentacion;
+using Microsoft.AspNetCore.HttpOverrides;
 using Breaku.Presentation.Rendimiento;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -24,15 +26,29 @@ if (File.Exists(envFile))
     builder.Configuration.AddEnvironmentVariables();
 }
 
-var frontendOrigin = builder.Configuration["FRONTEND_ORIGIN"];
-if (string.IsNullOrWhiteSpace(frontendOrigin))
+// Uno o varios frontends separados por coma (por ejemplo localhost:3000 y el de Vercel).
+var frontendOrigins = ConfiguracionDespliegue.Origenes(builder.Configuration["FRONTEND_ORIGIN"]);
+if (frontendOrigins.Length == 0)
 {
     throw new InvalidOperationException(
         "Falta la configuración 'FRONTEND_ORIGIN'. Defínela en backend/.env (ver backend/.env.example).");
 }
 
 builder.Services.AddCors(options => options.AddPolicy(FrontendCorsPolicy, policy =>
-    policy.WithOrigins(frontendOrigin.TrimEnd('/')).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+    policy.WithOrigins(frontendOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+
+// En Render hay un proxy adelante: se toma la IP real de X-Forwarded-For (la última que agrega el proxy) para que el
+// límite de intentos de login siga siendo por persona y no uno solo para todos.
+var detrasDeProxy = ConfiguracionDespliegue.DetrasDeProxy(builder.Configuration["RENDER"], builder.Configuration["DETRAS_DE_PROXY"]);
+if (detrasDeProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(opciones =>
+    {
+        opciones.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        opciones.KnownIPNetworks.Clear();
+        opciones.KnownProxies.Clear();
+    });
+}
 
 var jwtSecret = builder.Configuration["JWT_SECRET"];
 if (string.IsNullOrWhiteSpace(jwtSecret) || Encoding.UTF8.GetByteCount(jwtSecret) < 32)
@@ -118,6 +134,7 @@ builder.Services.AddSingleton<ICanalEnVivo, CanalSignalR>();
 
 var app = builder.Build();
 
+if (detrasDeProxy) app.UseForwardedHeaders();
 app.UseMiddleware<ApiMetricsMiddleware>();
 app.UseCors(FrontendCorsPolicy);
 

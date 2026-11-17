@@ -323,3 +323,44 @@ Cubren la unión de intervalos, la detección de choques y los huecos libres con
 Para probar la app completa sin gastar crédito, deja `LLM_API_KEY` sin definir en `backend/.env`: se usa el asistente simulado y la foto del horario responde «no disponible» sin llamar a ningún proveedor.
 
 Estilos con CSS Modules (`*.module.css` junto a cada componente) y variables de color y tipografía en `src/app/globals.css`. No se usan librerías de UI ni de estado.
+
+## Despliegue (publicar la app en internet)
+
+La app tiene tres partes y cada una vive en un lugar distinto:
+
+| Parte | Dónde | Qué hace |
+|---|---|---|
+| Frontend (Next.js) | **Vercel** | Las pantallas que ve el estudiante |
+| Backend (.NET) | **Render** (Docker, plan gratis) | El login, las reglas y la IA |
+| Base de datos (MySQL) | **Aiven** | Los datos del equipo (ya está en la nube) |
+
+### Backend en Render
+
+1. En [render.com](https://render.com), **New → Web Service**, conecta el repo (o tu fork) y elige:
+   - **Language:** Docker · **Branch:** `main` · **Root Directory:** `backend` (usa [`backend/Dockerfile`](backend/Dockerfile)).
+   - **Instance type:** Free · **Health Check Path:** `/health/ready`.
+2. Variables de entorno (**Environment**), nunca en el repo:
+
+| Variable | Valor |
+|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Los de Aiven (pedirlos por privado) |
+| `DB_SSL_MODE` | `Required` |
+| `JWT_SECRET` | Botón **Generate** de Render (distinto del de desarrollo) |
+| `FRONTEND_ORIGIN` | `http://localhost:3000,https://<tu-app>.vercel.app` (varios, separados por coma) |
+| `GOOGLE_CLIENT_ID` | El Client ID de Google (opcional) |
+| `LLM_API_KEY` | Vacío = asistente simulado. Con la clave real, cualquiera que entre gasta tokens del equipo |
+
+Render define `RENDER=true`: el backend lee la IP real del proxy (`X-Forwarded-For`) para que el límite de intentos de login sea por persona. En otro servicio con proxy, usar `DETRAS_DE_PROXY=true`. En el plan gratis el servicio se duerme tras 15 min sin uso: la primera visita tarda 30–50 s.
+
+### Frontend en Vercel
+
+**Add New → Project**, importa el repo y pon **Root Directory:** `frontend`. Variables (se leen al compilar: después de cambiarlas, **Redeploy**):
+
+| Variable | Valor |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | La URL de Render, por ejemplo `https://breaku-api.onrender.com` (sin barra final) |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | El mismo Client ID del backend |
+
+### Google
+
+En **Google Auth Platform → Clientes → (tu cliente web) → Orígenes de JavaScript autorizados**, agrega `https://<tu-app>.vercel.app` (además de `http://localhost` y `http://localhost:3000`).
