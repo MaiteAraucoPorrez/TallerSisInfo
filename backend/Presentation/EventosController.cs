@@ -170,7 +170,9 @@ public sealed class EventoFormularioForm
     /// <summary>FORMULARIO (por defecto) o FLYER. Solo se usa al crear; al editar se ignora.</summary>
     public string? Origen { get; set; }
     public IFormFile? Foto { get; set; }
+    /// <summary>Solo al editar: true borra la foto actual. No se puede enviar junto con una Foto nueva.</summary>
+    public bool QuitarFoto { get; set; }
 
     public EventoFormularioRequest ARequest()
-        => new(Titulo, Descripcion, Inicio, Fin, LugarId, LugarTexto, Asistencia, VisitaMin, VisitaMax, Origen);
+        => new(Titulo, Descripcion, Inicio, Fin, LugarId, LugarTexto, Asistencia, VisitaMin, VisitaMax, Origen, QuitarFoto);
 }

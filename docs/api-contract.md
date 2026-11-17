@@ -1219,6 +1219,21 @@ Todo texto que llega al asistente o sale de él pasa por los guardrails (`Reglas
 
 Errores `400`: `VALIDACION` (vacío, los dos campos, más de 8 MB), `ARCHIVO_NO_ADMITIDO` (firma que no es JPG/PNG/PDF), `PDF_MUCHAS_PAGINAS`, `PDF_PROTEGIDO` (con contraseña), `PDF_INVALIDO` (corrupto), `SOLICITUD_NO_PERMITIDA` (texto que intenta manipular al asistente). `401` sin sesión, `429` por límite, `503 LECTOR_NO_DISPONIBLE` (sin `LLM_API_KEY` o el modelo falla). Cada lectura queda en `log_auditoria_rag` con `tipo = EXTRACCION_EVENTO`; `datos_extraidos` guarda el borrador, los faltantes y las advertencias. La regla «el texto que cae en `ReglasSeguridadIa` pasa a PENDIENTE» es de HU23 al publicar.
 
+## 7j. Foto del evento al editar (HU23)
+
+`PUT /api/eventos/{id}` (JWT, `multipart/form-data`) gestiona la foto del evento con dos campos opcionales; una foto por evento (`evento_imagen`, 1:1):
+
+| Qué se envía | Resultado |
+|---|---|
+| Nada (ni `Foto` ni `QuitarFoto`) | La foto actual se conserva |
+| `Foto` (JPG o PNG, hasta 2 MB; se valida la firma real) | **Reemplaza** la foto anterior; `fotoUrl` cambia (`?v=`) |
+| `QuitarFoto=true` | **Borra** la foto actual; `fotoUrl` pasa a `null`. Si el evento no tenía foto, no hace nada |
+| `Foto` y `QuitarFoto=true` | `400 VALIDACION` «No puedes subir una foto nueva y quitar la actual a la vez.» No se cambia nada |
+
+Reglas: solo el dueño (otro usuario recibe `404`); solo si el evento es editable (PENDIENTE o PUBLICADO que no empezó: `409 EVENTO_NO_EDITABLE` o `EVENTO_INICIADO`); la edición sigue pasando el mismo filtro de texto. Foto inválida (firma que no es JPG/PNG, vacía, más de 2 MB): `400 VALIDACION` y la foto anterior se conserva. `QuitarFoto` se ignora al crear (`POST /api/eventos`).
+
+El evento indica si tiene foto con `fotoUrl` (`null` = sin foto). La imagen se pide con `GET /api/eventos/{id}/foto` (JWT: el navegador debe enviarla con el token, no sirve un `<img src>` directo); la ven el dueño, el admin y, si el evento está PUBLICADO y su creador no está suspendido, los demás.
+
 ## 8. Resumen de decisiones por responsable
 
 | Responsable | Tema | Valor por defecto | Estado |

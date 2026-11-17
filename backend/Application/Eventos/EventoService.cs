@@ -105,6 +105,8 @@ public sealed class EventoService
         if (error is not null) throw new ReglaNegocioException("VALIDACION", error);
         var (tipoMime, errorImagen) = ValidarImagen(imagen);
         if (errorImagen is not null) throw new ReglaNegocioException("VALIDACION", errorImagen);
+        if (request.QuitarFoto && imagen is not null)
+            throw new ReglaNegocioException("VALIDACION", ReglasEvento.MensajeFotoNuevaYQuitar);
 
         var lugar = await ResolverLugarAsync(request.LugarId, lugarTexto, ct);
         var lugarCatalogado = lugar is { Estado: ReglasBusquedaLugares.EstadoActivo, Validado: true };
@@ -135,7 +137,7 @@ public sealed class EventoService
         evento.Motivo = evaluacion.Motivo;
         evento.UpdatedAt = ahora.UtcDateTime;
 
-        await _repository.GuardarCambiosAsync(evento, imagen, tipoMime, ct);
+        await _repository.GuardarCambiosAsync(evento, imagen, tipoMime, request.QuitarFoto, ct);
         var actualizada = (await _repository.ListarMiosAsync(usuarioId, ct))
             .First(e => e.Evento.Id == evento.Id);
         return ADto(actualizada);
@@ -153,7 +155,7 @@ public sealed class EventoService
         evento.Estado = Evento.EstadoCancelado;
         evento.Motivo = null;
         evento.UpdatedAt = _reloj.GetUtcNow().UtcDateTime;
-        await _repository.GuardarCambiosAsync(evento, null, null, ct);
+        await _repository.GuardarCambiosAsync(evento, null, null, false, ct);
 
         var actualizado = (await _repository.ListarMiosAsync(usuarioId, ct))
             .First(e => e.Evento.Id == evento.Id);

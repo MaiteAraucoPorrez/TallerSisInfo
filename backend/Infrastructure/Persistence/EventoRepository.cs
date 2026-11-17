@@ -82,12 +82,15 @@ public sealed class EventoRepository : IEventoRepository
     public async Task<Evento?> ObtenerMioAsync(int eventoId, int usuarioId, CancellationToken ct = default)
         => await _db.Eventos.FirstOrDefaultAsync(e => e.Id == eventoId && e.CreadorId == usuarioId, ct);
 
-    public async Task GuardarCambiosAsync(Evento evento, byte[]? imagen, string? tipoMime, CancellationToken ct = default)
+    public async Task GuardarCambiosAsync(
+        Evento evento, byte[]? imagen, string? tipoMime, bool quitarImagen = false, CancellationToken ct = default)
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         await _db.SaveChangesAsync(ct);
         if (imagen is not null && tipoMime is not null)
             await GuardarImagenAsync(evento.Id, imagen, tipoMime, evento.UpdatedAt, ct);
+        else if (quitarImagen)
+            await _db.Database.ExecuteSqlAsync($"DELETE FROM evento_imagen WHERE evento_id = {evento.Id}", ct);
         await tx.CommitAsync(ct);
     }
 
