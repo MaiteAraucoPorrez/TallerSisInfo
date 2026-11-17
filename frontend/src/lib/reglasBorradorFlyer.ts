@@ -1,6 +1,6 @@
 // HU24 parte 2: cómo se prellena el formulario de HU23 con el borrador que leyó la IA.
 // Funciones puras, sin React ni red ni navegador, para poder probarlas con `node --test`.
-import { FOTO_EVENTO_MAX_BYTES, type CamposFormularioEvento } from "./reglasEventos.ts";
+import { FOTO_EVENTO_MAX_BYTES, fechaHoraCompleta, type CamposFormularioEvento } from "./reglasEventos.ts";
 import { camposFaltantes, imagenBorrosa, type EventoLeido } from "./reglasFlyer.ts";
 
 export type CamposEvento = CamposFormularioEvento & { descripcion: string };
@@ -79,8 +79,8 @@ export function borradorACampos(
 export function camposQueFaltan(marcados: readonly CampoFormulario[], campos: CamposEvento): Set<CampoFormulario> {
   const vacio: Record<CampoFormulario, boolean> = {
     titulo: !campos.titulo.trim(),
-    inicio: !campos.inicio,
-    fin: !campos.fin,
+    inicio: !fechaHoraCompleta(campos.inicio),
+    fin: !fechaHoraCompleta(campos.fin),
     lugar: !campos.lugarId && !campos.lugarTexto.trim(),
     asistencia: campos.asistencia === "",
     visitaMin: campos.asistencia === "LIBRE" && !campos.visitaMin,
