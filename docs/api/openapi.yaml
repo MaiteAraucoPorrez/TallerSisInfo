@@ -2564,7 +2564,7 @@ components:
           example: ENTRE_CLASES
     NotificacionDto:
       type: object
-      description: Aviso para el estudiante. `PUENTE_DISPONIBLE` y `DESPUES_DE_CLASES` (HU4), `INVITACION_COMUNIDAD` (HU13), `COMUNIDAD_CERRADA` (HU14), `CONEXION_SOLICITADA` y `CONEXION_ACEPTADA` (HU12, saludos de Libres contigo) o `REPORTE_RESUELTO` (HU27, un administrador revisó tu reporte).
+      description: Aviso para el estudiante. `PUENTE_DISPONIBLE` y `DESPUES_DE_CLASES` (HU4), `INVITACION_COMUNIDAD` (HU13), `COMUNIDAD_CERRADA` (HU14), `CONEXION_SOLICITADA` y `CONEXION_ACEPTADA` (HU12, saludos de Libres contigo) o `REPORTE_RESUELTO` (HU27, un administrador revisó tu reporte). Para el administrador, `REPORTE_NUEVO` (un estudiante envió un reporte; trae `reporteId`) y `EVENTO_POR_REVISAR` (un evento quedó pendiente); ambos quedan leídos para todos los admins cuando uno los resuelve (migración 030).
       properties:
         id:
           type: integer
@@ -2573,7 +2573,7 @@ components:
           example: 31
         tipo:
           type: string
-          enum: [PUENTE_DISPONIBLE, DESPUES_DE_CLASES, INVITACION_COMUNIDAD, COMUNIDAD_CERRADA, CONEXION_SOLICITADA, CONEXION_ACEPTADA, REPORTE_RESUELTO]
+          enum: [PUENTE_DISPONIBLE, DESPUES_DE_CLASES, INVITACION_COMUNIDAD, COMUNIDAD_CERRADA, CONEXION_SOLICITADA, CONEXION_ACEPTADA, REPORTE_RESUELTO, EVENTO_APROBADO, EVENTO_RECHAZADO, REPORTE_NUEVO, EVENTO_POR_REVISAR]
           description: Tipo de aviso.
           example: PUENTE_DISPONIBLE
         mensaje:
@@ -2621,7 +2621,7 @@ components:
           type: integer
           format: int32
           nullable: true
-          description: HU27. En `REPORTE_RESUELTO`, el reporte revisado (la campanita lleva a «Mis reportes»). `null` en los demás.
+          description: HU27. En `REPORTE_RESUELTO`, el reporte revisado (la campanita lleva a «Mis reportes»); en `REPORTE_NUEVO` (admin), el reporte por revisar. `null` en los demás.
           example: null
     ConfiguracionNotificacionesDto:
       type: object

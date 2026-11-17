@@ -566,6 +566,8 @@ sigue en «Mis reportes» (`GET /api/reportes/mios`), con la respuesta del admin
 | Respuesta del admin | Opcional al resolver o descartar, hasta 500 caracteres (`ck_rep_respuesta`). Completa en «Mis reportes»; recortada en el aviso | ✅ Definido |
 | Aviso | `REPORTE_RESUELTO` con `reporteId` en `GET /api/notificaciones`: «Tu reporte «Sugerencia» fue resuelto. Respuesta: «…»», hasta 200 caracteres. Se crea en la misma transacción que la decisión y se avisa en vivo (HU18) | ✅ Definido |
 | Errores inesperados | `500 ERROR_INESPERADO` con «Código de seguimiento: …» (la traza queda en el log del servidor) | ✅ Definido |
+| Campanita del admin | Al enviarse un reporte, cada admin activo recibe `REPORTE_NUEVO` (con `reporteId`): «Nuevo reporte «Algo no funciona». «…»». Al resolverlo o descartarlo, queda leído para **todos** los admins. Requiere la migración **030**; sin ella, el reporte se guarda igual y el aviso no | ✅ Definido |
+| Eventos por revisar | Si un evento queda `PENDIENTE` (al crearlo o editarlo), cada admin activo recibe `EVENTO_POR_REVISAR` (con su evento): «"Título" espera tu revisión. «motivo»». Si se vuelve a editar, el mismo aviso vuelve a quedar sin leer (no se duplica). Al aprobarlo, rechazarlo o cancelarlo, queda leído para todos los admins | ✅ Definido |
 
 | Método | Ruta | Qué hace |
 |---|---|---|
