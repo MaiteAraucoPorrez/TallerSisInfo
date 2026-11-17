@@ -1,4 +1,5 @@
 using Breaku.Application.Horarios;
+using Breaku.Application.Notificaciones;
 using Breaku.Application.TiempoReal;
 using Breaku.Domain.Rules;
 
@@ -13,12 +14,15 @@ public class AdminService
     private readonly IAdminRepository _repo;
     private readonly ITiempoReal _tiempoReal;
     private readonly IEtiquetaRepository? _etiquetas;
+    private readonly IAvisosAdmin? _avisos;
 
-    public AdminService(IAdminRepository repo, ITiempoReal? tiempoReal = null, IEtiquetaRepository? etiquetas = null)
+    public AdminService(IAdminRepository repo, ITiempoReal? tiempoReal = null, IEtiquetaRepository? etiquetas = null,
+        IAvisosAdmin? avisos = null)
     {
         _repo = repo;
         _tiempoReal = tiempoReal ?? SinTiempoReal.Instancia;
         _etiquetas = etiquetas;
+        _avisos = avisos;
     }
 
     // ---------- HU30: catálogo de etiquetas de tipo de actividad ----------
@@ -154,6 +158,9 @@ public class AdminService
         // La campanita del estudiante se actualiza en vivo; si el canal falla, el aviso ya quedó guardado.
         try { await _tiempoReal.AvisosCambiaronAsync([revision.UsuarioId], ct); }
         catch (Exception ex) when (ex is not OperationCanceledException) { }
+
+        // Ya no está pendiente: el aviso «Nuevo reporte» queda leído para todos los admins.
+        if (_avisos is not null) await _avisos.ReporteRevisadoAsync(reporteId, ct);
     }
 
     public async Task<List<ConsultaRagAdminDto>> ListarConsultasRagAsync(int? limite, CancellationToken ct = default)

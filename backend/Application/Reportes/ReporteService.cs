@@ -1,4 +1,5 @@
 using Breaku.Application.Horarios;
+using Breaku.Application.Notificaciones;
 using Breaku.Domain.Rules;
 
 namespace Breaku.Application.Reportes;
@@ -12,7 +13,13 @@ namespace Breaku.Application.Reportes;
 public class ReporteService
 {
     private readonly IReporteRepository _repo;
-    public ReporteService(IReporteRepository repo) => _repo = repo;
+    private readonly IAvisosAdmin? _avisos;
+
+    public ReporteService(IReporteRepository repo, IAvisosAdmin? avisos = null)
+    {
+        _repo = repo;
+        _avisos = avisos;
+    }
 
     public Task<List<LugarReportableDto>> ListarLugaresAsync(CancellationToken ct = default) => _repo.ListarLugaresAsync(ct);
 
@@ -50,6 +57,9 @@ public class ReporteService
             throw new ReglaNegocioException("DEMASIADOS_PENDIENTES", ReglasReporte.MensajeDemasiados);
 
         var nuevo = await _repo.CrearAsync(usuarioId, motivo, req.LugarId, req.ComunidadId, req.EventoId, descripcion, ct);
+
+        // La campanita de los admins (nunca rompe el envío: el reporte ya quedó guardado).
+        if (_avisos is not null) await _avisos.ReporteNuevoAsync(nuevo, motivo, descripcion, ct);
         return new ReporteCreadoDto(nuevo, ReglasReporte.Pendiente);
     }
 }

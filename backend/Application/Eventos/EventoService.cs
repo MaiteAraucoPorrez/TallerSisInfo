@@ -1,6 +1,7 @@
 using Breaku.Domain;
 using Breaku.Domain.Rules;
 using Breaku.Application.Horarios;
+using Breaku.Application.Notificaciones;
 
 namespace Breaku.Application.Eventos;
 
@@ -8,13 +9,15 @@ public sealed class EventoService
 {
     private readonly IEventoRepository _repository;
     private readonly TimeProvider _reloj;
+    private readonly IAvisosAdmin? _avisos;
 
     public EventoService(IEventoRepository repository) : this(repository, TimeProvider.System) { }
 
-    public EventoService(IEventoRepository repository, TimeProvider reloj)
+    public EventoService(IEventoRepository repository, TimeProvider reloj, IAvisosAdmin? avisos = null)
     {
         _repository = repository;
         _reloj = reloj;
+        _avisos = avisos;
     }
 
     public async Task<List<EventoLugarDto>> ListarLugaresAsync(CancellationToken ct = default)
@@ -77,6 +80,7 @@ public sealed class EventoService
         var creado = await _repository.CrearAsync(
             evento, imagen, tipoMime, !esAdmin, desdeUtc, hastaUtc, ct);
         if (!creado) throw new ReglaNegocioException("LIMITE_DIARIO", ReglasEvento.MensajeLimiteDiario);
+        await AvisarAdminsAsync(evento, ct);
 
         return ADto(new EventoListado(evento, nombreLugar, imagen is null ? null : ReglasEvento.VersionImagen(ahora.UtcDateTime)));
     }
@@ -138,6 +142,7 @@ public sealed class EventoService
         evento.UpdatedAt = ahora.UtcDateTime;
 
         await _repository.GuardarCambiosAsync(evento, imagen, tipoMime, request.QuitarFoto, ct);
+        await AvisarAdminsAsync(evento, ct);
         var actualizada = (await _repository.ListarMiosAsync(usuarioId, ct))
             .First(e => e.Evento.Id == evento.Id);
         return ADto(actualizada);
@@ -156,6 +161,7 @@ public sealed class EventoService
         evento.Motivo = null;
         evento.UpdatedAt = _reloj.GetUtcNow().UtcDateTime;
         await _repository.GuardarCambiosAsync(evento, null, null, false, ct);
+        await AvisarAdminsAsync(evento, ct);
 
         var actualizado = (await _repository.ListarMiosAsync(usuarioId, ct))
             .First(e => e.Evento.Id == evento.Id);
@@ -197,6 +203,19 @@ public sealed class EventoService
             throw new ReglaNegocioException("YA_REVISADO", ReglasEvento.MensajeEventoNoPendiente);
         if (resultado == ResultadoModeracionEvento.Finalizado)
             throw new ReglaNegocioException("EVENTO_FINALIZADO", ReglasEvento.MensajeEventoFinalizado);
+
+        if (_avisos is not null) await _avisos.EventoRevisadoAsync(eventoId, ct);
+    }
+
+    /// <summary>
+    /// La campanita de los admins: si el evento quedó pendiente, les llega (o vuelve a llegar, si se editó); si ya no lo
+    /// está (se publicó solo o se canceló), el aviso queda leído.
+    /// </summary>
+    private async Task AvisarAdminsAsync(Evento evento, CancellationToken ct)
+    {
+        if (_avisos is null) return;
+        if (evento.Estado == Evento.EstadoPendiente) await _avisos.EventoPorRevisarAsync(evento.Id, evento.Titulo, evento.Motivo, ct);
+        else await _avisos.EventoRevisadoAsync(evento.Id, ct);
     }
 
     private async Task<Lugar?> ResolverLugarAsync(int? lugarId, string? lugarTexto, CancellationToken ct)
