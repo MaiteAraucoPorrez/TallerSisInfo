@@ -1,11 +1,19 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SubirFlyer, { BorradorFlyer } from "@/components/eventos/SubirFlyer";
 import FotoEvento from "@/components/eventos/FotoEvento";
 import { Entrada, Pieza } from "@/components/app/Movimiento";
 import { ErrorApi } from "@/lib/api";
+import { prepararFotoDelBorrador } from "@/lib/fotoEvento";
+import {
+  CampoFormulario,
+  avisoLugarFueraDelCatalogo,
+  avisosDelBorrador,
+  borradorACampos,
+  camposQueFaltan,
+} from "@/lib/reglasBorradorFlyer";
 import {
   actualizarEvento,
   cancelarEvento,
@@ -61,6 +69,13 @@ export default function EventosPage() {
   const [ahora, setAhora] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const [mostrandoFlyer, setMostrandoFlyer] = useState(false);
+  // HU24 parte 2: el formulario viene de un borrador de afiche.
+  const [desdeFlyer, setDesdeFlyer] = useState(false);
+  const [marcados, setMarcados] = useState<CampoFormulario[]>([]);
+  const [avisos, setAvisos] = useState<string[]>([]);
+  const [preparandoFoto, setPreparandoFoto] = useState(false);
+  const [claveFoto, setClaveFoto] = useState(0);
+  const turnoFoto = useRef(0);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
 
@@ -104,10 +119,20 @@ export default function EventosPage() {
     setError("");
   }
 
+  function quitarFoto() {
+    turnoFoto.current += 1; // si todavía se estaba preparando una foto, se ignora su resultado
+    setPreparandoFoto(false);
+    setFoto(null);
+    setClaveFoto((k) => k + 1);
+  }
+
   function limpiarFormulario() {
     setCampos(CAMPOS_VACIOS);
-    setFoto(null);
+    quitarFoto();
     setEditando(null);
+    setDesdeFlyer(false);
+    setMarcados([]);
+    setAvisos([]);
   }
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
@@ -131,7 +156,8 @@ export default function EventosPage() {
     setMensaje("");
     try {
       const nombreLugar = lugares.find((l) => String(l.id) === campos.lugarId)?.nombre;
-      const datos = formDataEvento(campos, foto, nombreLugar);
+      const origen = editando !== null ? undefined : desdeFlyer ? "FLYER" : "FORMULARIO";
+      const datos = formDataEvento(campos, foto, nombreLugar, origen);
       const resultado = editando === null
         ? await crearEvento(datos)
         : await actualizarEvento(editando, datos);
@@ -168,7 +194,10 @@ export default function EventosPage() {
       visitaMin: evento.visitaMin === null ? "" : String(evento.visitaMin),
       visitaMax: evento.visitaMax === null ? "" : String(evento.visitaMax),
     });
-    setFoto(null);
+    quitarFoto();
+    setDesdeFlyer(false);
+    setMarcados([]);
+    setAvisos([]);
     setEditando(evento.id);
     setPestana("crear");
     setMensaje("");
@@ -192,28 +221,38 @@ export default function EventosPage() {
     }
   }
 
-  function usarBorrador(borrador: BorradorFlyer) {
-    const evento = borrador.evento;
-    const coincidencia = lugares.find((l) => l.nombre.localeCompare(evento.lugarTexto ?? "", "es", { sensitivity: "base" }) === 0);
-    setCampos({
-      titulo: evento.titulo ?? "",
-      descripcion: evento.descripcion ?? "",
-      inicio: evento.inicio ?? "",
-      fin: evento.fin ?? "",
-      lugarId: coincidencia ? String(coincidencia.id) : "",
-      lugarTexto: coincidencia ? "" : evento.lugarTexto ?? "",
-      asistencia: evento.asistencia ?? "FIJA",
-      visitaMin: evento.visitaMin === null ? "" : String(evento.visitaMin),
-      visitaMax: evento.visitaMax === null ? "" : String(evento.visitaMax),
-    });
-    setFoto(borrador.archivo ?? imagenDelFlyer(borrador));
+  async function usarBorrador(borrador: BorradorFlyer) {
+    const { campos: nuevos, marcados: porCompletar } = borradorACampos(borrador.evento, borrador.faltantes, lugares);
+    const imagen = borrador.archivo ?? imagenDelFlyer(borrador);
+    quitarFoto();
+    const turno = turnoFoto.current;
+    setCampos(nuevos);
+    setMarcados(porCompletar);
+    setAvisos(avisosDelBorrador(borrador));
+    setDesdeFlyer(true);
     setEditando(null);
     setMostrandoFlyer(false);
-    setMensaje("Revisa los datos del borrador y completa cualquier campo que falte.");
+    setMensaje(
+      porCompletar.length > 0
+        ? "Revisa el borrador y completa los campos marcados con «falta»."
+        : "Revisa los datos del borrador antes de publicar.",
+    );
     setError("");
+
+    if (!imagen) return;
+    setPreparandoFoto(true);
+    const preparada = await prepararFotoDelBorrador(imagen);
+    if (turno !== turnoFoto.current) return; // el estudiante la quitó, eligió otra o cambió de formulario
+    setPreparandoFoto(false);
+    setFoto(preparada.foto);
+    if (preparada.aviso) setAvisos((actuales) => [...actuales, preparada.aviso as string]);
   }
 
   const seleccion = lugares.find((l) => String(l.id) === campos.lugarId);
+  const faltan = camposQueFaltan(marcados, campos);
+  const avisoLugar = desdeFlyer && editando === null ? avisoLugarFueraDelCatalogo(campos) : null;
+  const marcaFalta = (campo: CampoFormulario) =>
+    faltan.has(campo) ? <em className={estilos.falta}>falta</em> : null;
 
   return (
     <Entrada as="main" className={estilos.pagina}>
@@ -257,10 +296,20 @@ export default function EventosPage() {
             </button>
           </div>
 
+          {desdeFlyer && editando === null && (avisos.length > 0 || avisoLugar) && (
+            <div className={estilos.aviso} role="status">
+              <strong>Revisa estos avisos del afiche</strong>
+              <ul>
+                {avisos.map((aviso) => <li key={aviso}>{aviso}</li>)}
+                {avisoLugar && <li>{avisoLugar}</li>}
+              </ul>
+            </div>
+          )}
+
           <form className={estilos.formulario} onSubmit={(e) => void guardar(e)} noValidate>
             <label className={estilos.campo}>
-              <span>Título <b>*</b></span>
-              <input value={campos.titulo} maxLength={120} required onChange={(e) => cambiar("titulo", e.target.value)} placeholder="Ej.: Feria de ciencias" />
+              <span>Título <b>*</b> {marcaFalta("titulo")}</span>
+              <input value={campos.titulo} maxLength={120} required aria-invalid={faltan.has("titulo") || undefined} onChange={(e) => cambiar("titulo", e.target.value)} placeholder="Ej.: Feria de ciencias" />
             </label>
 
             <label className={estilos.campo}>
@@ -271,19 +320,19 @@ export default function EventosPage() {
 
             <div className={estilos.dosColumnas}>
               <label className={estilos.campo}>
-                <span>Empieza <b>*</b></span>
-                <input type="datetime-local" value={campos.inicio} required onChange={(e) => cambiar("inicio", e.target.value)} />
+                <span>Empieza <b>*</b> {marcaFalta("inicio")}</span>
+                <input type="datetime-local" value={campos.inicio} required aria-invalid={faltan.has("inicio") || undefined} onChange={(e) => cambiar("inicio", e.target.value)} />
               </label>
               <label className={estilos.campo}>
-                <span>Termina <b>*</b></span>
-                <input type="datetime-local" value={campos.fin} required onChange={(e) => cambiar("fin", e.target.value)} />
+                <span>Termina <b>*</b> {marcaFalta("fin")}</span>
+                <input type="datetime-local" value={campos.fin} required aria-invalid={faltan.has("fin") || undefined} onChange={(e) => cambiar("fin", e.target.value)} />
               </label>
             </div>
             <p className={estilos.ayuda}>Las fechas se interpretan en hora de Bolivia (UTC−4). Un horario fuera del campus quedará en revisión.</p>
 
             <label className={estilos.campo}>
-              <span>Lugar <b>*</b></span>
-              <select value={campos.lugarId} onChange={(e) => cambiar("lugarId", e.target.value)}>
+              <span>Lugar <b>*</b> {marcaFalta("lugar")}</span>
+              <select value={campos.lugarId} aria-invalid={faltan.has("lugar") || undefined} onChange={(e) => cambiar("lugarId", e.target.value)}>
                 <option value="">Elige un lugar del catálogo o escribe uno</option>
                 {lugares.map((lugar) => <option key={lugar.id} value={lugar.id}>{lugar.nombre}</option>)}
               </select>
@@ -291,13 +340,13 @@ export default function EventosPage() {
             {!seleccion && (
               <label className={estilos.campo}>
                 <span>Nombre del lugar <b>*</b></span>
-                <input value={campos.lugarTexto} maxLength={150} required onChange={(e) => cambiar("lugarTexto", e.target.value)} placeholder="Ej.: Patio junto al coliseo" />
+                <input value={campos.lugarTexto} maxLength={150} required aria-invalid={faltan.has("lugar") || undefined} onChange={(e) => cambiar("lugarTexto", e.target.value)} placeholder="Ej.: Patio junto al coliseo" />
                 <small className={estilos.ayuda}>Los lugares que no estén en el catálogo se envían a revisión.</small>
               </label>
             )}
 
-            <fieldset className={estilos.grupo}>
-              <legend>Tipo de asistencia</legend>
+            <fieldset className={estilos.grupo} role="radiogroup" aria-invalid={faltan.has("asistencia") || undefined}>
+              <legend>Tipo de asistencia <b>*</b> {marcaFalta("asistencia")}</legend>
               <label className={estilos.opcion}>
                 <input type="radio" name="asistencia" checked={campos.asistencia === "FIJA"} onChange={() => cambiar("asistencia", "FIJA")} />
                 <span><strong>Hay que llegar a la hora</strong><small>La asistencia es fija durante el evento.</small></span>
@@ -311,19 +360,21 @@ export default function EventosPage() {
             {campos.asistencia === "LIBRE" && (
               <div className={estilos.dosColumnas}>
                 <label className={estilos.campo}>
-                  <span>Visita mínima (min) <b>*</b></span>
-                  <input type="number" min={1} max={825} step={1} value={campos.visitaMin} onChange={(e) => cambiar("visitaMin", e.target.value)} />
+                  <span>Visita mínima (min) <b>*</b> {marcaFalta("visitaMin")}</span>
+                  <input type="number" min={1} max={825} step={1} value={campos.visitaMin} aria-invalid={faltan.has("visitaMin") || undefined} onChange={(e) => cambiar("visitaMin", e.target.value)} />
                 </label>
                 <label className={estilos.campo}>
-                  <span>Visita máxima (min) <b>*</b></span>
-                  <input type="number" min={1} max={825} step={1} value={campos.visitaMax} onChange={(e) => cambiar("visitaMax", e.target.value)} />
+                  <span>Visita máxima (min) <b>*</b> {marcaFalta("visitaMax")}</span>
+                  <input type="number" min={1} max={825} step={1} value={campos.visitaMax} aria-invalid={faltan.has("visitaMax") || undefined} onChange={(e) => cambiar("visitaMax", e.target.value)} />
                 </label>
               </div>
             )}
 
             <label className={estilos.campo}>
               <span>Foto <small>(opcional; JPG o PNG, hasta 2 MB)</small></span>
-              <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(e) => {
+              <input key={claveFoto} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(e) => {
+                turnoFoto.current += 1; // lo que el estudiante elige gana sobre la foto del afiche que se esté preparando
+                setPreparandoFoto(false);
                 const archivo = e.target.files?.[0] ?? null;
                 const problema = archivo ? validarFotoEvento(archivo) : null;
                 if (problema) {
@@ -335,12 +386,18 @@ export default function EventosPage() {
                 setError("");
                 setFoto(archivo);
               }} />
+              {preparandoFoto && <small className={estilos.ayuda}>Preparando la foto del afiche…</small>}
               {foto && <small className={estilos.ayuda}>{foto.name} · {(foto.size / 1024).toFixed(0)} KB de {FOTO_EVENTO_MAX_BYTES / 1024} KB</small>}
             </label>
+            {foto && (
+              <div className={estilos.accionesFoto}>
+                <button type="button" className={estilos.botonSecundario} disabled={guardando} onClick={quitarFoto}>Quitar foto</button>
+              </div>
+            )}
 
             <div className={estilos.accionesFormulario}>
               {editando !== null && <button type="button" className={estilos.botonSecundario} disabled={guardando} onClick={limpiarFormulario}>Salir de edición</button>}
-              <button type="submit" className={estilos.botonPrimario} disabled={guardando || cargando}>
+              <button type="submit" className={estilos.botonPrimario} disabled={guardando || cargando || preparandoFoto}>
                 {guardando ? "Guardando…" : editando === null ? "Publicar evento" : "Guardar cambios"}
               </button>
             </div>
@@ -384,7 +441,7 @@ export default function EventosPage() {
       )}
 
       {mostrandoFlyer && (
-        <SubirFlyer onCerrar={() => setMostrandoFlyer(false)} onBorrador={usarBorrador} />
+        <SubirFlyer onCerrar={() => setMostrandoFlyer(false)} onBorrador={(borrador) => void usarBorrador(borrador)} />
       )}
     </Entrada>
   );

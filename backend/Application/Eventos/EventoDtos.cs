@@ -11,7 +11,9 @@ public sealed record EventoFormularioRequest(
     string? LugarTexto,
     string? Asistencia,
     int? VisitaMin,
-    int? VisitaMax);
+    int? VisitaMax,
+    // FORMULARIO (por defecto) o FLYER cuando el borrador salió de leer un afiche. Solo se usa al crear.
+    string? Origen = null);
 
 public sealed record EventoDto(
     int Id,

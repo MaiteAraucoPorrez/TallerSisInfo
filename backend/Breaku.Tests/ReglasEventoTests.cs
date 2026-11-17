@@ -90,6 +90,42 @@ public sealed class ReglasEventoTests
         Assert.Equal(errorEsperado, error);
     }
 
+    [Theory]
+    [InlineData(null, "FORMULARIO")]
+    [InlineData("", "FORMULARIO")]
+    [InlineData("  ", "FORMULARIO")]
+    [InlineData("FORMULARIO", "FORMULARIO")]
+    [InlineData("FLYER", "FLYER")]
+    [InlineData(" flyer ", "FLYER")]
+    public void El_estudiante_solo_puede_crear_con_origen_FORMULARIO_o_FLYER(string? solicitado, string esperado)
+    {
+        var (origen, error) = ReglasEvento.ResolverOrigen(false, solicitado);
+
+        Assert.Null(error);
+        Assert.Equal(esperado, origen);
+    }
+
+    [Theory]
+    [InlineData("ADMIN")]
+    [InlineData("OTRO")]
+    [InlineData("FLYERS")]
+    public void Cualquier_otro_origen_es_invalido_incluido_ADMIN(string solicitado)
+    {
+        var (origen, error) = ReglasEvento.ResolverOrigen(false, solicitado);
+
+        Assert.Null(origen);
+        Assert.Equal(ReglasEvento.MensajeOrigenInvalido, error);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("FLYER")]
+    public void El_administrador_siempre_crea_con_origen_ADMIN(string? solicitado)
+    {
+        Assert.Equal(Evento.OrigenAdmin, ReglasEvento.ResolverOrigen(true, solicitado).Origen);
+        Assert.NotNull(ReglasEvento.ResolverOrigen(true, "ADMIN").Error);
+    }
+
     [Fact]
     public void Solo_acepta_imagenes_JPG_y_PNG_pequenas()
     {

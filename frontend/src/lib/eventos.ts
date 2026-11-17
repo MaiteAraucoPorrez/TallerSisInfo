@@ -41,7 +41,7 @@ export type EventoCampus = {
   lugarId: number | null;
   lugar: string;
   estado: "PENDIENTE" | "PUBLICADO" | "RECHAZADO" | "CANCELADO";
-  origen: "FORMULARIO" | "ADMIN";
+  origen: "FORMULARIO" | "FLYER" | "ADMIN";
   asistencia: "FIJA" | "LIBRE";
   visitaMin: number | null;
   visitaMax: number | null;

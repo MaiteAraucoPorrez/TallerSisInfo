@@ -34,6 +34,8 @@ public sealed class EventoService
         if (error is not null) throw new ReglaNegocioException("VALIDACION", error);
         var (tipoMime, errorImagen) = ValidarImagen(imagen);
         if (errorImagen is not null) throw new ReglaNegocioException("VALIDACION", errorImagen);
+        var (origen, errorOrigen) = ReglasEvento.ResolverOrigen(esAdmin, request.Origen);
+        if (errorOrigen is not null) throw new ReglaNegocioException("VALIDACION", errorOrigen);
 
         var lugar = await ResolverLugarAsync(request.LugarId, lugarTexto, ct);
         var lugarCatalogado = lugar is { Estado: ReglasBusquedaLugares.EstadoActivo, Validado: true };
@@ -62,7 +64,7 @@ public sealed class EventoService
             Inicio = request.Inicio.Value.UtcDateTime,
             Fin = request.Fin.Value.UtcDateTime,
             Estado = evaluacion.Estado,
-            Origen = esAdmin ? Evento.OrigenAdmin : Evento.OrigenFormulario,
+            Origen = origen!,
             Asistencia = asistencia,
             VisitaMin = request.VisitaMin is int min ? (short)min : null,
             VisitaMax = request.VisitaMax is int max ? (short)max : null,
