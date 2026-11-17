@@ -22,6 +22,10 @@ public static class ReglasEvento
     public const string MensajeFotoNuevaYQuitar = "No puedes subir una foto nueva y quitar la actual a la vez.";
     public const string MensajeOrigenInvalido = "El origen del evento no es válido.";
     public const string MensajeEventoNoEditable = "Solo se pueden editar los eventos pendientes o publicados.";
+    public const string RangoHoy = "HOY";
+    public const string RangoSemana = "SEMANA";
+    public const string MensajeRangoInvalido = "El rango debe ser hoy o semana.";
+
     public const string MensajeEventoFinalizado = "El evento ya terminó, así que no se puede revisar.";
 
     private static readonly TimeSpan DesfaseBolivia = TimeSpan.FromHours(-4);
@@ -130,6 +134,21 @@ public static class ReglasEvento
         var local = ahora.ToOffset(DesfaseBolivia);
         var inicioLocal = new DateTimeOffset(local.Year, local.Month, local.Day, 0, 0, 0, DesfaseBolivia);
         return (inicioLocal.UtcDateTime, inicioLocal.AddDays(1).UtcDateTime);
+    }
+
+    /// <summary>
+    /// Fin (UTC) del rango pedido en hora local de Bolivia: "hoy" llega hasta las 00:00 de manana y "semana"
+    /// son hoy y los 6 dias siguientes. Devuelve null si el rango no es valido.
+    /// </summary>
+    public static DateTime? HastaDelRango(string? rango, DateTimeOffset ahora)
+    {
+        var (_, finDia) = RangoDiaLocal(ahora);
+        return rango?.Trim().ToUpperInvariant() switch
+        {
+            RangoHoy => finDia,
+            RangoSemana => finDia.AddDays(6),
+            _ => null
+        };
     }
 
     public sealed record ResultadoPublicacion(string Estado, string? Motivo);

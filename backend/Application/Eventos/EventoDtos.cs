@@ -67,3 +67,17 @@ public enum ResultadoModeracionEvento
     YaRevisado,
     Finalizado
 }
+
+public sealed record EventoPublicoDto(
+    int Id,
+    string Titulo,
+    string? Descripcion,
+    DateTimeOffset Inicio,
+    DateTimeOffset Fin,
+    int? LugarId,
+    string Lugar,
+    bool FueraDelCampus,
+    string Asistencia,
+    short? VisitaMin,
+    short? VisitaMax,
+    string? FotoUrl);
