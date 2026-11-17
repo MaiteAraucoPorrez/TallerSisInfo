@@ -150,7 +150,7 @@ public sealed class EventosController : ControllerBase
         return ex.Codigo switch
         {
             "NO_ENCONTRADO" => NotFound(error),
-            "LIMITE_DIARIO" or "EVENTO_INICIADO" or "YA_CANCELADO" or "YA_REVISADO" => Conflict(error),
+            "LIMITE_DIARIO" or "EVENTO_INICIADO" or "EVENTO_NO_EDITABLE" or "YA_CANCELADO" or "YA_REVISADO" => Conflict(error),
             _ => BadRequest(error)
         };
     }

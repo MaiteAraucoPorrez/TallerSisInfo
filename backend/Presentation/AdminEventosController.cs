@@ -45,7 +45,7 @@ public sealed class AdminEventosController : ControllerBase
             return ex.Codigo switch
             {
                 "NO_ENCONTRADO" => NotFound(error),
-                "YA_REVISADO" => Conflict(error),
+                "YA_REVISADO" or "EVENTO_FINALIZADO" => Conflict(error),
                 _ => BadRequest(error)
             };
         }

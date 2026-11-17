@@ -23,7 +23,7 @@ public interface IEventoRepository
     Task<Evento?> ObtenerMioAsync(int eventoId, int usuarioId, CancellationToken ct = default);
     Task GuardarCambiosAsync(Evento evento, byte[]? imagen, string? tipoMime, CancellationToken ct = default);
     Task<FotoEvento?> ObtenerImagenAsync(int eventoId, CancellationToken ct = default);
-    Task<List<EventoListado>> ListarPendientesAsync(CancellationToken ct = default);
+    Task<List<EventoListado>> ListarPendientesAsync(DateTime ahoraUtc, CancellationToken ct = default);
     Task<ResultadoModeracionEvento> ModerarAsync(
         int eventoId,
         string estado,
