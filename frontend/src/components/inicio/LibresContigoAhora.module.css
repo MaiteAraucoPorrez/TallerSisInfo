@@ -1,0 +1,297 @@
+/* «Libres contigo» en Inicio: compañeros libres a tu hora, con avatar, compatibilidad y «Saludar». */
+.tarjeta {
+  padding: 18px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 22px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-1);
+}
+
+.encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.encabezado h2 {
+  margin: 0;
+  color: var(--ucb-marino);
+  font-family: var(--fuente-titulo), system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.cuando {
+  margin: 2px 0 0;
+  color: var(--texto-tenue);
+  font-size: 0.85rem;
+}
+
+.verTodo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  color: var(--ucb-azul-medio);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.verTodo svg {
+  transition: transform 250ms var(--curva-salida);
+}
+
+/* ---------- Lista ---------- */
+
+.lista {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.companero {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 8px;
+  border-radius: 16px;
+  background: var(--fondo-suave);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tonoA {
+  background: var(--ucb-amarillo-suave);
+  color: var(--ucb-amarillo-oscuro);
+}
+
+.tonoB {
+  background: #dfeefc;
+  color: var(--ucb-azul-medio);
+}
+
+.tonoC {
+  background: #e3f4ec;
+  color: #1f6b4a;
+}
+
+.tonoD {
+  background: #efe7fb;
+  color: #5b3b8c;
+}
+
+.datos {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.datos strong {
+  overflow: hidden;
+  color: var(--ucb-marino);
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datos small {
+  overflow: hidden;
+  color: var(--texto-tenue);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compatibilidad {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--ucb-marino);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.accion {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.saludar {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(160deg, var(--ucb-marino-2), var(--ucb-marino));
+  color: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.saludar:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.saludar:focus-visible,
+.responder:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+.estado,
+.estadoConectado,
+.responder {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  color: var(--exito);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.estadoConectado {
+  color: var(--ucb-azul-medio);
+}
+
+.responder {
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--ucb-amarillo);
+  color: var(--ucb-marino);
+  text-decoration: none;
+}
+
+/* ---------- Invitación (sin test o sin consentimiento) ---------- */
+
+.invitacion {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--ucb-amarillo-suave), #fffdf5);
+  border: 1px solid rgba(253, 213, 55, 0.6);
+}
+
+.invitacionIcono {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--superficie);
+}
+
+.invitacion > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.invitacion strong {
+  color: var(--ucb-marino);
+  font-size: 0.98rem;
+}
+
+.invitacion small {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.invitacionBoton {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 42px;
+  text-decoration: none;
+}
+
+/* ---------- Carga, vacío y error ---------- */
+
+.cargando {
+  display: grid;
+  gap: 8px;
+}
+
+.cargando span {
+  height: 58px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #e3e8ef 25%, #f1f4f8 50%, #e3e8ef 75%);
+  background-size: 200% 100%;
+}
+
+.vacio {
+  margin: 0;
+  padding: 14px;
+  border: 1.5px dashed var(--borde);
+  border-radius: 16px;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.error {
+  margin: 10px 0 0;
+  color: var(--error);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Celular angosto: el porcentaje baja junto al nombre para que «Saludar» no se salga. */
+@media (max-width: 380px) {
+  .companero {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+  }
+
+  .compatibilidad {
+    display: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .verTodo:hover svg {
+    transform: translateX(3px);
+  }
+
+  .saludar:hover:not(:disabled) {
+    box-shadow: 0 10px 20px -12px rgba(5, 40, 69, 0.8);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cargando span {
+    animation: brillo 1.2s infinite;
+  }
+}
+
+@keyframes brillo {
+  to {
+    background-position: -200% 0;
+  }
+}
