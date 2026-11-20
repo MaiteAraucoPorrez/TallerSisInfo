@@ -1,4 +1,6 @@
 .pie {
+  position: relative;
+  margin-top: clamp(64px, 8vw, 130px);
   box-sizing: border-box;
   padding: clamp(56px, 8vw, 88px) clamp(16px, 4.5vw, 64px) max(28px, env(safe-area-inset-bottom));
   background: #031b30;
@@ -112,5 +114,52 @@
   .marco {
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;
+  }
+}
+
+/* ---------- Onda de entrada ---------- */
+
+.onda {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - 2px);
+  height: clamp(64px, 8vw, 130px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.onda svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+}
+
+.ondaAtras {
+  fill: #0b3558;
+}
+
+.ondaFrente {
+  fill: #031b30;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ondaAtras {
+    animation: deslizarOnda 38s linear infinite reverse;
+  }
+
+  .ondaFrente {
+    animation: deslizarOnda 26s linear infinite;
+  }
+}
+
+@keyframes deslizarOnda {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
