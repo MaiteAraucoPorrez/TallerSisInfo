@@ -21,6 +21,7 @@ import { Puente, duracionMin, esDespuesDeClases, hhmm, listarPuentes } from "@/l
 import { useEventoEnVivo } from "@/lib/tiempoReal";
 import estilos from "./CompanerosLibres.module.css";
 import { EscenaCoincidir } from "./EscenasComunidades";
+import PlanConConexion from "./PlanConConexion";
 import TestAfinidad from "./TestAfinidad";
 
 const DIAS = ["", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
@@ -367,10 +368,12 @@ function InvitacionTest({ preguntas, minutos, conBorrador, onEmpezar }: { pregun
 /** Saludos recibidos y conexiones aceptadas: lo que más importa, arriba. */
 function TusConexiones({ conexiones, onRespondida }: { conexiones: Conexiones; onRespondida: (c: Conexion) => void }) {
   const { recibidas, aceptadas } = conexiones;
+  const [planCon, setPlanCon] = useState<Conexion | null>(null);
   if (recibidas.length === 0 && aceptadas.length === 0) return null;
 
   return (
     <div className={estilos.conexiones}>
+      <AnimatePresence>{planCon && <PlanConConexion conexion={planCon} onCerrar={() => setPlanCon(null)} />}</AnimatePresence>
       {recibidas.length > 0 && (
         <div className={estilos.grupoConexiones}>
           <h3 className={estilos.grupoTitulo}>Te quieren conocer</h3>
@@ -400,12 +403,24 @@ function TusConexiones({ conexiones, onRespondida }: { conexiones: Conexiones; o
                     Libres el {DIAS[c.diaSemana]} de {hhmm(c.horaInicio)} a {hhmm(c.horaFin)}
                   </span>
                 </div>
-                {c.correo && (
-                  <a className={estilos.escribir} href={`mailto:${c.correo}?subject=${encodeURIComponent("¡Hola! Nos conectó BreakU")}`}>
-                    <span>Escribirle</span>
-                    <small>{c.correo}</small>
-                  </a>
-                )}
+                {/* Lo principal es armar algo juntos hoy; el correo queda como dato, por si lo necesitan. */}
+                <div className={estilos.accionesConexion}>
+                  <motion.button
+                    type="button"
+                    className={estilos.escribir}
+                    onClick={() => setPlanCon(c)}
+                    whileTap={{ scale: 0.97 }}
+                    transition={RESORTE_TOQUE}
+                  >
+                    <span>Armar plan o invitar</span>
+                    <small>Hoy, en su rato libre</small>
+                  </motion.button>
+                  {c.correo && (
+                    <a className={estilos.correo} href={`mailto:${c.correo}?subject=${encodeURIComponent("¡Hola! Nos conectó BreakU")}`}>
+                      {c.correo}
+                    </a>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
