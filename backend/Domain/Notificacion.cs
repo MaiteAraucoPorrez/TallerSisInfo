@@ -21,6 +21,11 @@ public class Notificacion
     public const string TipoReporteNuevo = "REPORTE_NUEVO";
     /// <summary>Para el admin: un evento quedó pendiente de revisión (migración 030).</summary>
     public const string TipoEventoPorRevisar = "EVENTO_POR_REVISAR";
+    /// <summary>
+    /// Para quien creó una comunidad: alguien se sumó o se bajó (migración 031). Uno por comunidad: el siguiente cambio
+    /// reemplaza el mensaje y lo vuelve a dejar sin leer.
+    /// </summary>
+    public const string TipoAsistenciaComunidad = "ASISTENCIA_COMUNIDAD";
 
     public long Id { get; set; }
     public int UsuarioId { get; set; }

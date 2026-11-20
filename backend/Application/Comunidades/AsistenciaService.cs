@@ -22,9 +22,13 @@ public record ContextoAsistencia(
     bool PuedeVerla,
     int Confirmados,
     CruceAsistencia? Cruce,
-    List<int> PendientesConAviso);
+    List<int> PendientesConAviso,
+    /// <summary>Nombre de quien responde, para el aviso a quien creó la comunidad.</summary>
+    string MiNombre = "");
 
-public record CambioAsistencia(string Estado, bool Guardar, IReadOnlyList<int> AvisarCerrada, string? MensajeCerrada, bool Reabrir);
+/// <param name="AvisoCreadora">Mensaje para quien creó la comunidad (alguien se sumó o se bajó); null si no hay aviso.</param>
+public record CambioAsistencia(string Estado, bool Guardar, IReadOnlyList<int> AvisarCerrada, string? MensajeCerrada, bool Reabrir,
+    string? AvisoCreadora = null);
 
 public record FilaParticipante(int UsuarioId, string Nombre, string? Carrera, string Estado, DateTime? RespondidoEn);
 
@@ -96,7 +100,9 @@ public class AsistenciaService
                 decision.Cambia,
                 seLlena ? ctx.PendientesConAviso : [],
                 seLlena ? ReglasAsistencia.MensajeCerrada(comunidad.Actividad) : null,
-                seReabre);
+                seReabre,
+                ReglasAsistencia.MensajeParaCreadora(ctx.MiEstado, decision.Estado, decision.Cambia,
+                    ReglasDescubrir.NombreCorto(ctx.MiNombre), comunidad.Actividad, despues, comunidad.MaxParticipantes));
         }, ct);
 
         return respuesta!;
