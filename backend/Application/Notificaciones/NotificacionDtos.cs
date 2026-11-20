@@ -12,7 +12,9 @@ public record NotificacionDto(
     DateTime CreadaEn,
     int? ComunidadId = null,
     // HU27: en REPORTE_RESUELTO, el reporte (la campanita lleva a «Mis reportes»).
-    int? ReporteId = null
+    int? ReporteId = null,
+    // Avisos de eventos (por ejemplo INVITACION_EVENTO): la campanita lleva al detalle del evento.
+    int? EventoId = null
 );
 
 public record ConfiguracionNotificacionesDto(bool NotificacionesActivas);

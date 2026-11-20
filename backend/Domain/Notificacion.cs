@@ -26,6 +26,8 @@ public class Notificacion
     /// reemplaza el mensaje y lo vuelve a dejar sin leer.
     /// </summary>
     public const string TipoAsistenciaComunidad = "ASISTENCIA_COMUNIDAD";
+    /// <summary>Una conexión de «Libres contigo» te invita a un evento de hoy (migración 032). Lleva <c>evento_id</c>.</summary>
+    public const string TipoInvitacionEvento = "INVITACION_EVENTO";
 
     public long Id { get; set; }
     public int UsuarioId { get; set; }

@@ -50,7 +50,13 @@ public class AfinidadController : ControllerBase
 public class ConexionesController : ControllerBase
 {
     private readonly ConexionService _service;
-    public ConexionesController(ConexionService service) => _service = service;
+    private readonly PlanesService _planes;
+
+    public ConexionesController(ConexionService service, PlanesService planes)
+    {
+        _service = service;
+        _planes = planes;
+    }
 
     private int UsuarioId =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")
@@ -86,6 +92,40 @@ public class ConexionesController : ControllerBase
     public Task<IActionResult> Responder(int id, ResponderConexionRequest req, CancellationToken ct)
         => Ejecutar(async () => Ok(await _service.ResponderAsync(UsuarioId, id, req, ct)));
 
+    /// <summary>
+    /// Qué se puede hacer hoy con una conexión aceptada: los ratos libres que comparten (para armar un plan), tus
+    /// comunidades y los eventos de hoy que caen en esos ratos (para invitarla).
+    /// </summary>
+    [HttpGet("{id:int}/plan")]
+    [ProducesResponseType(typeof(OpcionesPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> OpcionesPlan(int id, CancellationToken ct)
+        => Ejecutar(async () => Ok(await _planes.OpcionesAsync(UsuarioId, id, ct)));
+
+    /// <summary>
+    /// Arma un plan para los dos: una comunidad privada (cupo 2) en el rato que comparten hoy, en un lugar de las
+    /// sugerencias de ese rato. La conexión recibe la invitación como cualquier comunidad («Voy / No voy»).
+    /// </summary>
+    [HttpPost("{id:int}/plan")]
+    [ProducesResponseType(typeof(PlanCreadoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status409Conflict)]
+    public Task<IActionResult> CrearPlan(int id, CrearPlanRequest req, CancellationToken ct)
+        => Ejecutar(async () => StatusCode(StatusCodes.Status201Created, await _planes.CrearPlanAsync(UsuarioId, id, req, ct)));
+
+    /// <summary>Invita a la conexión a una comunidad tuya o a un evento de hoy que caiga en el rato que comparten.</summary>
+    [HttpPost("{id:int}/invitaciones")]
+    [ProducesResponseType(typeof(InvitacionEnviadaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorNegocioDto), StatusCodes.Status409Conflict)]
+    public Task<IActionResult> Invitar(int id, InvitarConexionRequest req, CancellationToken ct)
+        => Ejecutar(async () => Ok(await _planes.InvitarAsync(UsuarioId, id, req, ct)));
+
     private async Task<IActionResult> Ejecutar(Func<Task<IActionResult>> accion)
     {
         try { return await accion(); }
@@ -96,7 +136,8 @@ public class ConexionesController : ControllerBase
             {
                 "NO_ENCONTRADO" => NotFound(cuerpo),
                 ReglasConexion.ErrorYaExiste or ReglasConexion.ErrorDemasiados or ReglasConexion.ErrorNoCoinciden
-                    or ReglasConexion.ErrorYaRespondida => Conflict(cuerpo),
+                    or ReglasConexion.ErrorYaRespondida or ReglasPlan.ErrorSinTramo or ReglasPlan.ErrorCruce
+                    or ReglasPlan.ErrorYaInvitado or ReglasPlan.ErrorCompleta => Conflict(cuerpo),
                 _ => BadRequest(cuerpo),
             };
         }

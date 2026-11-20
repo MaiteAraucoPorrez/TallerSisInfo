@@ -1977,6 +1977,100 @@ paths:
       responses:
         '200':
           description: La API responde.
+  /api/conexiones/{id}/plan:
+    get:
+      tags: [Matching]
+      operationId: opcionesPlanConexion
+      summary: Qué se puede hacer hoy con una conexión aceptada.
+      description: |
+        Los ratos libres que los dos comparten HOY (30 min o más, desde ahora, sin lo que cualquiera de los dos ya creó o
+        confirmó, en pedazos de 15 min o más y hasta 4 h), tus comunidades activas con cupo que caen en esos ratos y los
+        eventos publicados de hoy que caen en esos ratos. Solo para conexiones `ACEPTADA` donde participas (si no, 404).
+      security:
+        - Bearer: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Opciones de hoy (las listas pueden venir vacías).
+          content:
+            application/json:
+              example:
+                conexionId: 3
+                nombre: Mateo Vargas
+                tramos: [{ puenteId: 23, horaInicio: '11:15', horaFin: '12:00', minutos: 45 }]
+                comunidades: []
+                eventos: [{ id: 14, titulo: Feria de emprendimientos, lugar: Hall del bloque B, horaInicio: '11:30', horaFin: '12:30' }]
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          description: La conexión no existe, no es tuya o no está aceptada.
+    post:
+      tags: [Matching]
+      operationId: crearPlanConexion
+      summary: Arma un plan para los dos en un rato que comparten hoy.
+      description: |
+        Crea una comunidad **privada** (migración 032) con cupo 2: no aparece en Descubrir, nadie entra sin invitación y no
+        busca invitados automáticos. Ocupa el rato completo elegido (`puenteId` = el tuyo, de las opciones) y el lugar tiene
+        que estar entre los lugares viables de ese puente (`GET /api/lugares/viables`). Quien la arma queda `CONFIRMADO`; la
+        conexión, `PENDIENTE`, con el aviso `INVITACION_COMUNIDAD` («Ana Q. te propone un plan: Coffee Break, hoy de 10:30 a
+        11:15. ¿Vas?») y responde con `PUT /api/comunidades/{id}/asistencia` como cualquier comunidad.
+      security:
+        - Bearer: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { puenteId: 23, lugarId: 7 }
+      responses:
+        '201':
+          description: Plan creado.
+          content:
+            application/json:
+              example: { comunidadId: 5, actividad: Plan en Coffee Break, horaInicio: '11:15', horaFin: '12:00', mensaje: 'Listo: le propusiste a Mateo Vargas ir a Coffee Break de 11:15 a 12:00.' }
+        '400':
+          description: '`VALIDACION` (faltan puenteId o lugarId) o `LUGAR_NO_VIABLE` (el lugar no es opción para ese rato).'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          description: La conexión no existe, no es tuya o no está aceptada.
+        '409':
+          description: '`SIN_TRAMO` (hoy ya no les queda ese rato libre) o `CRUCE` (ya vas a otra comunidad a esa hora).'
+  /api/conexiones/{id}/invitaciones:
+    post:
+      tags: [Matching]
+      operationId: invitarConexion
+      summary: Invita a la conexión a una comunidad tuya o a un evento de hoy.
+      description: |
+        Una sola cosa por pedido: `comunidadId` (una comunidad activa que creaste, con cupo) o `eventoId` (un evento
+        publicado de hoy). Tiene que caer en un rato libre que comparten hoy. A la comunidad se la invita como en HU13
+        (`PENDIENTE` + `INVITACION_COMUNIDAD`, si tiene los avisos encendidos). Al evento, con el aviso `INVITACION_EVENTO`
+        (con `eventoId`; uno por evento y persona: si se repite, se renueva).
+      security:
+        - Bearer: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { eventoId: 14 }
+      responses:
+        '200':
+          description: Invitación enviada.
+          content:
+            application/json:
+              example: { mensaje: 'Listo: invitaste a Mateo Vargas a «Feria de emprendimientos».' }
+        '400':
+          description: '`VALIDACION` (ninguna o las dos cosas) o `FUERA_DEL_TRAMO` (no cae en el rato que comparten hoy).'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          description: La conexión, la comunidad o el evento no existen (o ya terminaron).
+        '409':
+          description: '`YA_INVITADO` (ya está en esa comunidad) o `COMPLETA` (no queda cupo).'
   /health/db:
     get:
       tags: [Health]
@@ -2571,7 +2665,7 @@ components:
           example: ENTRE_CLASES
     NotificacionDto:
       type: object
-      description: Aviso para el estudiante. `PUENTE_DISPONIBLE` y `DESPUES_DE_CLASES` (HU4), `INVITACION_COMUNIDAD` (HU13), `COMUNIDAD_CERRADA` (HU14), `ASISTENCIA_COMUNIDAD` (para quien creó la comunidad, cuando alguien se suma o se baja; uno por comunidad y el siguiente cambio lo reemplaza; migración 031), `CONEXION_SOLICITADA` y `CONEXION_ACEPTADA` (HU12, saludos de Libres contigo) o `REPORTE_RESUELTO` (HU27, un administrador revisó tu reporte). Para el administrador, `REPORTE_NUEVO` (un estudiante envió un reporte; trae `reporteId`) y `EVENTO_POR_REVISAR` (un evento quedó pendiente); ambos quedan leídos para todos los admins cuando uno los resuelve (migración 030).
+      description: Aviso para el estudiante. `PUENTE_DISPONIBLE` y `DESPUES_DE_CLASES` (HU4), `INVITACION_COMUNIDAD` (HU13), `COMUNIDAD_CERRADA` (HU14), `ASISTENCIA_COMUNIDAD` (para quien creó la comunidad, cuando alguien se suma o se baja; uno por comunidad y el siguiente cambio lo reemplaza; migración 031), `CONEXION_SOLICITADA` y `CONEXION_ACEPTADA` (HU12, saludos de Libres contigo), `INVITACION_EVENTO` (una conexión te invita a un evento de hoy; trae `eventoId`; migración 032) o `REPORTE_RESUELTO` (HU27, un administrador revisó tu reporte). Para el administrador, `REPORTE_NUEVO` (un estudiante envió un reporte; trae `reporteId`) y `EVENTO_POR_REVISAR` (un evento quedó pendiente); ambos quedan leídos para todos los admins cuando uno los resuelve (migración 030).
       properties:
         id:
           type: integer
@@ -2580,7 +2674,7 @@ components:
           example: 31
         tipo:
           type: string
-          enum: [PUENTE_DISPONIBLE, DESPUES_DE_CLASES, INVITACION_COMUNIDAD, COMUNIDAD_CERRADA, CONEXION_SOLICITADA, CONEXION_ACEPTADA, REPORTE_RESUELTO, EVENTO_APROBADO, EVENTO_RECHAZADO, REPORTE_NUEVO, EVENTO_POR_REVISAR, ASISTENCIA_COMUNIDAD]
+          enum: [PUENTE_DISPONIBLE, DESPUES_DE_CLASES, INVITACION_COMUNIDAD, COMUNIDAD_CERRADA, CONEXION_SOLICITADA, CONEXION_ACEPTADA, REPORTE_RESUELTO, EVENTO_APROBADO, EVENTO_RECHAZADO, REPORTE_NUEVO, EVENTO_POR_REVISAR, ASISTENCIA_COMUNIDAD, INVITACION_EVENTO]
           description: Tipo de aviso.
           example: PUENTE_DISPONIBLE
         mensaje:

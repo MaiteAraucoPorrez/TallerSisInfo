@@ -775,6 +775,17 @@ completo y el correo de quien saludó, y le avisa con `CONEXION_ACEPTADA`. El av
 | 404 | El saludo no existe o no es tuyo (`NO_ENCONTRADO`) |
 | 409 | Ya estaba respondido (`YA_RESPONDIDA`) |
 
+## 7b-bis. Planes con tus conexiones (Libres contigo — responsable: Maite, migración 032)
+
+| Regla | Valor | Estado |
+|---|---|---|
+| Quién | Solo con una conexión `ACEPTADA` donde participas. Si no, 404 | ✅ Definido |
+| Cuándo | Hoy, en los ratos libres que comparten: cruce de sus puentes de hoy (30 min o más, como el matching), desde ahora (redondeado a 5 min), **menos lo que cualquiera de los dos ya creó o confirmó**, en pedazos de 15 min o más y hasta 4 h (`ReglasPlan.TramosDeHoy` + `QuitarOcupados`) | ✅ Definido |
+| Armar plan | `POST /api/conexiones/{id}/plan` `{puenteId, lugarId}`. Comunidad **privada** de cupo 2 en el rato completo; el lugar tiene que estar en los lugares viables de ese puente. Quien arma, `CONFIRMADO`; la conexión, `PENDIENTE` + `INVITACION_COMUNIDAD` («Ana Q. te propone un plan: … ¿Vas?»). Responde con «Voy / No voy» como cualquier comunidad. Si a quien arma se le cruza otra comunidad → 409 `CRUCE` | ✅ Definido |
+| Privada | `comunidad_efimera.privada`: no sale en Descubrir para otros, nadie entra sin invitación (404) y `POST /api/comunidades/{id}/invitaciones` no busca a nadie (400) | ✅ Definido |
+| Invitar a… | `POST /api/conexiones/{id}/invitaciones` con `comunidadId` (tuya, activa, con cupo) **o** `eventoId` (publicado, de hoy). Tiene que caer en un rato compartido (si no, 400 `FUERA_DEL_TRAMO`). Comunidad: `PENDIENTE` + `INVITACION_COMUNIDAD` (409 `YA_INVITADO` / `COMPLETA`). Evento: aviso `INVITACION_EVENTO` con `eventoId`, uno por evento y persona | ✅ Definido |
+| Opciones | `GET /api/conexiones/{id}/plan`: `tramos` (con tu `puenteId`), `comunidades` invitables y `eventos` de hoy que caen en esos ratos | ✅ Definido |
+
 ## 7c. Valoración de recomendaciones (HU9 — responsable: Amira)
 
 | Regla | Valor | Estado |

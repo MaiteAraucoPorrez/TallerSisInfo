@@ -31,6 +31,8 @@ public class ComunidadService : IInvitadorComunidad
             throw new ReglaNegocioException("NO_ENCONTRADO", "La actividad no existe.");
         if (comunidad.Estado != ComunidadEfimera.EstadoActiva || comunidad.Fin <= _reloj.GetUtcNow().UtcDateTime)
             throw new ReglaNegocioException("VALIDACION", "La actividad ya terminó.");
+        if (comunidad.Privada)
+            throw new ReglaNegocioException("VALIDACION", ReglasPlan.MensajePrivada);
 
         return await InvitarAsync(comunidad, ct);
     }
