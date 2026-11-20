@@ -23,7 +23,7 @@ public sealed class DescubrirComunidadesRepository : IDescubrirComunidadesReposi
                       && !suspendidos.Contains(c.CreadorId)
                       && (c.CreadorId == usuarioId
                           || participaciones.Any(p => p.ComunidadId == c.Id && p.UsuarioId == usuarioId)
-                          || (deOtrosEnZona != null && u.Activo && u.VisibleMatching && u.ZonaActualId == deOtrosEnZona))
+                          || (deOtrosEnZona != null && !c.Privada && u.Activo && u.VisibleMatching && u.ZonaActualId == deOtrosEnZona))
                 select c.Id)
             .AnyAsync(ct);
     }
@@ -41,7 +41,7 @@ public sealed class DescubrirComunidadesRepository : IDescubrirComunidadesReposi
                       && !suspendidos.Contains(c.CreadorId)
                       && (c.CreadorId == usuarioId
                           || participaciones.Any(p => p.ComunidadId == c.Id && p.UsuarioId == usuarioId)
-                          || (deOtrosEnZona != null && u.Activo && u.VisibleMatching && u.ZonaActualId == deOtrosEnZona))
+                          || (deOtrosEnZona != null && !c.Privada && u.Activo && u.VisibleMatching && u.ZonaActualId == deOtrosEnZona))
                 orderby c.Inicio, c.Id
                 select new ComunidadActiva(
                     c.Id, c.CreadorId, u.Nombre, c.Actividad, c.Inicio, c.Fin, c.MaxParticipantes,

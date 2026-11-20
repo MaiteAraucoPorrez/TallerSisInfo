@@ -19,6 +19,13 @@ public class ComunidadEfimera
     public short MaxParticipantes { get; set; }
 
     public int? LugarId { get; set; }
+
+    /// <summary>
+    /// Plan armado con una conexión de «Libres contigo» (migración 032): no aparece en Descubrir, nadie entra sin
+    /// invitación y no se buscan invitados automáticos.
+    /// </summary>
+    public bool Privada { get; set; }
+
     public string Estado { get; set; } = EstadoActiva;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

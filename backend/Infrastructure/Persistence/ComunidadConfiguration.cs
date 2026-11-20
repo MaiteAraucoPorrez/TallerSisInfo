@@ -19,6 +19,7 @@ public sealed class ComunidadConfiguration : IEntityTypeConfiguration<ComunidadE
         builder.Property(c => c.Fin).HasColumnName("fin").HasColumnType("datetime(6)");
         builder.Property(c => c.MaxParticipantes).HasColumnName("max_participantes");
         builder.Property(c => c.LugarId).HasColumnName("lugar_id");
+        builder.Property(c => c.Privada).HasColumnName("privada");
         builder.Property(c => c.Estado).HasColumnName("estado").HasMaxLength(10);
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").HasColumnType("datetime(6)");
         builder.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime(6)");

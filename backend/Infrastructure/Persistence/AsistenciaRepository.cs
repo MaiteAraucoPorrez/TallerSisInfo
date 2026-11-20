@@ -37,7 +37,8 @@ public sealed class AsistenciaRepository : IAsistenciaRepository
         var creadorEnTabla = await participaciones
             .AnyAsync(p => p.ComunidadId == comunidadId && p.UsuarioId == comunidad.CreadorId, ct);
 
-        var puedeVerla = mia is null && await PuedeVerlaAsync(comunidad.CreadorId, usuarioId, ct);
+        // Un plan privado (migración 032) no acepta a nadie sin invitación.
+        var puedeVerla = mia is null && !comunidad.Privada && await PuedeVerlaAsync(comunidad.CreadorId, usuarioId, ct);
 
         var cruce = await (from c in _db.Comunidades.AsNoTracking()
                            where c.Id != comunidadId && c.Estado == ComunidadEfimera.EstadoActiva
