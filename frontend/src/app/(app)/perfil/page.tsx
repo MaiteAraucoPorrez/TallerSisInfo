@@ -18,7 +18,7 @@ import {
   IconoReloj,
   IconoSalir,
 } from "@/components/app/Iconos";
-import { Entrada, Pieza, RESORTE_TOQUE, SALIDA } from "@/components/app/Movimiento";
+import { Entrada, Pieza, RESORTE_TOQUE, SALIDA, seguirPuntero } from "@/components/app/Movimiento";
 import { Selector } from "@/components/app/Selectores";
 import { guardarConfiguracionMatching, obtenerConfiguracionMatching } from "@/lib/matching";
 import { guardarConfiguracion, obtenerConfiguracion } from "@/lib/notificaciones";
@@ -226,7 +226,7 @@ function Perfil() {
 
   return (
     <Entrada as="main" className={estilos.pagina}>
-      <Pieza as="header" className={estilos.cabecera}>
+      <Pieza as="header" className={estilos.cabecera} onPointerMove={seguirPuntero}>
         <FondoVivo />
         <motion.div
           className={estilos.avatar}

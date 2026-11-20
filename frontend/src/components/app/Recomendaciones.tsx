@@ -11,7 +11,7 @@ import fotoGradas from "@/components/onboarding/fotos/estudiantes.webp";
 import FondoVivo from "./FondoVivo";
 import IconoDuo from "./IconosDuo";
 import { IconoDestello, IconoFlechaIzquierda, IconoLuna, IconoObjetivo, IconoPersonas, IconoRayo } from "./Iconos";
-import { Entrada, Odometro, Pieza, RESORTE_TOQUE, SALIDA } from "./Movimiento";
+import { Entrada, Odometro, Pieza, RESORTE_TOQUE, SALIDA, seguirPuntero } from "./Movimiento";
 import { Selector } from "./Selectores";
 import estilos from "./Recomendaciones.module.css";
 import ChatRecomendaciones from "./ChatRecomendaciones";
@@ -93,7 +93,7 @@ export default function Recomendaciones({ estadoInicial, minutosLibres, puenteIn
           </Link>
         </Pieza>
 
-        <Pieza as="header" className={estilos.cabecera}>
+        <Pieza as="header" className={estilos.cabecera} onPointerMove={seguirPuntero}>
           <FondoVivo foto={fotoGradas} enfoque="80% 40%" />
           {minutos && (
             <span className={estilos.libres}>
@@ -198,7 +198,7 @@ export default function Recomendaciones({ estadoInicial, minutosLibres, puenteIn
         </button>
       </Pieza>
 
-      <Pieza as="header" className={estilos.resumen}>
+      <Pieza as="header" className={estilos.resumen} onPointerMove={seguirPuntero}>
         <FondoVivo foto={fotoGradas} enfoque="80% 40%" />
         <span className={estilos.resumenAnimo}>
           <Icono tamano={16} /> {actual.nombre}
