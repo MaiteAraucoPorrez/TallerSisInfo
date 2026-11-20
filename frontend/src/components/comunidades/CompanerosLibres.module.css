@@ -948,7 +948,34 @@
   font-weight: 700;
 }
 
+.accionesConexion {
+  display: grid;
+  justify-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.correo {
+  overflow: hidden;
+  max-width: 240px;
+  color: var(--texto-tenue);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.correo:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
 .escribir {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
   display: grid;
   justify-items: center;
   gap: 2px;
@@ -1001,8 +1028,12 @@
   }
 
   .saludo .respuestas,
-  .escribir {
+  .accionesConexion {
     grid-column: 1 / -1;
+  }
+
+  .correo {
+    max-width: none;
   }
 
   .escribir small {

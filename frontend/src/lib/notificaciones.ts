@@ -7,6 +7,8 @@ export type Notificacion = {
     | "DESPUES_DE_CLASES"
     | "INVITACION_COMUNIDAD"
     | "COMUNIDAD_CERRADA"
+    // Una conexión de «Libres contigo» te invita a un evento de hoy (migración 032). Trae `eventoId`.
+    | "INVITACION_EVENTO"
     // Para quien creó la comunidad (migración 031): alguien se sumó o se bajó. Uno por comunidad, se reemplaza.
     | "ASISTENCIA_COMUNIDAD"
     | "SANCION_ADVERTENCIA"
@@ -28,6 +30,8 @@ export type Notificacion = {
   comunidadId?: number | null;
   /** HU27: en REPORTE_RESUELTO, el reporte revisado (la campanita lleva a «Mis reportes»); en REPORTE_NUEVO, el reporte por revisar. */
   reporteId?: number | null;
+  /** En los avisos de eventos (por ejemplo INVITACION_EVENTO): la campanita lleva al detalle del evento. */
+  eventoId?: number | null;
 };
 
 export type ConfiguracionNotificaciones = { notificacionesActivas: boolean };

@@ -18,6 +18,8 @@ const PRESENTACIONES: Record<string, PresentacionNotificacion> = {
   DESPUES_DE_CLASES: { titulo: "Terminaste tus clases", clase: "puente", icono: "rayo" },
   INVITACION_COMUNIDAD: { titulo: "Invitación a una comunidad", clase: "invitacion", icono: "personas" },
   COMUNIDAD_CERRADA: { titulo: "El grupo se llenó", clase: "cerrada", icono: "personas" },
+  // Una conexión de «Libres contigo» te invita a un evento de hoy. Lleva al detalle del evento.
+  INVITACION_EVENTO: { titulo: "Te invitan a un evento", clase: "invitacion", icono: "calendario" },
   // Para quien creó la comunidad: alguien se sumó o se bajó. Lleva a la comunidad, donde está «Quiénes van».
   ASISTENCIA_COMUNIDAD: { titulo: "Cambió quién va a tu grupo", clase: "invitacion", icono: "personas" },
   // HU28: la advertencia del administrador. No lleva a otra pantalla: el aviso ya dice el motivo.
@@ -50,6 +52,7 @@ type AvisoConDestino = {
   duracionMinutos?: number | null;
   comunidadId?: number | null;
   reporteId?: number | null;
+  eventoId?: number | null;
 };
 
 /** A dónde lleva «Ver» (o «Revisar», en el admin). `null` = el aviso no lleva a ninguna pantalla. */
@@ -63,6 +66,8 @@ export function rutaNotificacion(n: AvisoConDestino): string | null {
       return "/admin/eventos";
     case "REPORTE_RESUELTO":
       return enlaceMisReportes(n.reporteId);
+    case "INVITACION_EVENTO":
+      return n.eventoId ? `/eventos/${n.eventoId}` : "/eventos";
     case "EVENTO_APROBADO":
     case "EVENTO_RECHAZADO":
       return "/eventos?pestana=mios";
