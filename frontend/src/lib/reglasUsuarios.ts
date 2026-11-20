@@ -30,12 +30,14 @@ export function ayudaFechaFin(hasta: string): string {
     : `Si dejas la fecha vacía, la suspensión durará ${DIAS_SUSPENSION_POR_DEFECTO} días por defecto.`;
 }
 
-/** Primer problema del formulario, o null si se puede enviar. `hasta` viene de un input datetime-local (hora local). */
+/** Primer problema del formulario, o null si se puede enviar. `hasta` viene de `CampoFechaHora` («AAAA-MM-DDTHH:mm», hora local). */
 export function validarSancion(tipo: TipoSancion, motivo: string, hasta: string, ahora: Date): string | null {
   const limpio = motivo.trim();
   if (limpio.length === 0) return "Escribe el motivo de la sanción.";
   if (limpio.length > LARGO_MAXIMO_MOTIVO) return `El motivo puede tener hasta ${LARGO_MAXIMO_MOTIVO} caracteres.`;
   if (tipo === "SUSPENSION" && hasta.trim()) {
+    // El selector de fecha y hora deja el valor a medias («AAAA-MM-DDT» o «THH:mm») hasta que se eligen las dos partes.
+    if (/^\d{4}-\d{2}-\d{2}T$|^T\d{2}:\d{2}$/.test(hasta.trim())) return "Elige el día y la hora en que termina la suspensión.";
     const fin = new Date(hasta);
     if (Number.isNaN(fin.getTime())) return "La fecha de fin no es válida.";
     if (fin.getTime() <= ahora.getTime()) return "La fecha de fin tiene que ser posterior a ahora.";
