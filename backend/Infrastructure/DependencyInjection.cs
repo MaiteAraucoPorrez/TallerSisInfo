@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<IMatchingRepository, MatchingRepository>();
         services.AddScoped<IAfinidadRepository, AfinidadRepository>();
         services.AddScoped<IConexionRepository, ConexionRepository>();
+        services.AddScoped<IPlanesRepository, PlanesRepository>();
         services.AddScoped<IExtraccionRepository, ExtraccionRepository>();
         services.AddScoped<IReporteRepository, ReporteRepository>();
         services.AddScoped<IComunidadRepository, ComunidadRepository>();
