@@ -1738,8 +1738,8 @@ paths:
       summary: Compañeros con tiempo libre compatible con uno de tus puentes.
       description: |
         HU12: quienes coinciden contigo en tiempo libre **y** en el test de afinidad. Tiempo: mismo día y 30 minutos o
-        más en común. Test: afinidad de 35 o más y al menos una respuesta en común. Si falla una de las dos, no aparece.
-        Orden por `compatibilidad` (60 % test + 40 % tiempo). Solo cruza estudiantes de tu sede activa que aceptaron
+        más en común. Test: afinidad de 50 o más y al menos una respuesta en común. Si falla una de las dos, no aparece.
+        Orden por `afinidad` (el número que muestra la app) y después por minutos en común. Solo cruza estudiantes de tu sede activa que aceptaron
         aparecer y que hicieron el test; exige que tú también. Siempre 200 si el puente es tuyo: mira `estado`
         (`OK`, `SIN_RESULTADOS`, `SIN_ZONA`, `NO_VISIBLE` o `SIN_TEST`). Por privacidad, solo el nombre corto y nunca el
         correo; el `usuarioId` sirve para saludar (`POST /api/conexiones`).
@@ -3165,7 +3165,7 @@ components:
         minutosEnComun: { type: integer, format: int32, minimum: 30, example: 90 }
         porcentaje: { type: integer, format: int32, minimum: 1, maximum: 100, example: 100 }
         franjasCompartidas: { type: integer, format: int32, minimum: 1, example: 1 }
-        afinidad: { type: integer, format: int32, minimum: 35, maximum: 100, example: 74, description: Qué tanto se parecen según el test. }
+        afinidad: { type: integer, format: int32, minimum: 50, maximum: 100, example: 74, description: Qué tanto se parecen según el test. Es el número que muestra la app. }
         compatibilidad: { type: integer, format: int32, minimum: 0, maximum: 100, example: 84, description: 60 % afinidad + 40 % tiempo (`porcentaje`). }
         enComun:
           type: array

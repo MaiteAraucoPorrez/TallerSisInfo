@@ -90,7 +90,8 @@ public class MatchingService
             .Where(x => ReglasAfinidad.Coinciden(x.Test))
             .Select(x => ACompanero(porId[x.Tiempo.UsuarioId], x.Tiempo, x.Test,
                 conexiones.TryGetValue(x.Tiempo.UsuarioId, out var con) ? AResumen(con, usuarioId) : null))
-            .OrderByDescending(c => c.Compatibilidad)
+            // El número que ve el estudiante es la afinidad del test: la lista va en ese mismo orden (y después el tiempo).
+            .OrderByDescending(c => c.Afinidad)
             .ThenByDescending(c => c.MinutosEnComun)
             .ThenBy(c => c.UsuarioId)
             .Take(ReglasMatching.MaximoCompaneros)
