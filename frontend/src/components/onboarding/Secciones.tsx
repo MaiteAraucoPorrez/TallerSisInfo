@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { IconoFlechaDerecha } from "@/components/app/Iconos";
 import { SALIDA } from "@/components/app/Movimiento";
 import fotoCafeteria from "./fotos/cafeteria.webp";
+import fotoCaminando from "./fotos/caminando.webp";
 import { Estrellas, Icono, type NombreIcono } from "./Iconos";
 import styles from "./Secciones.module.css";
 
@@ -182,7 +183,7 @@ export function ComoFunciona() {
             key={p.titulo}
             className={styles.paso}
             data-destacado={i === 1 || undefined}
-            style={{ "--giro": `${p.giro}deg` } as React.CSSProperties}
+            style={{ "--giro": `${p.giro}deg` } as CSSProperties}
             initial={reducir ? false : { opacity: 0, x: (1 - i) * 110, y: 40 }}
             whileInView={{ opacity: 1, x: 0, y: 0 }}
             viewport={{ once: true, margin: "-120px" }}
@@ -384,21 +385,51 @@ export function Opiniones() {
 
 /* ---------- Llamado final ---------- */
 
+/** Franjas en que se corta la foto del llamado; cada una entra con su propio retraso y escalón. */
+const FRANJAS = 6;
+
 export function Llamado() {
   const aparecer = useAparecer();
+  const reducir = useReducedMotion();
+  const [visto, setVisto] = useState(false);
   return (
     <section className={styles.llamado} aria-labelledby="titulo-llamado">
-      <motion.div className={styles.llamadoCaja} {...aparecer()}>
-        <h2 id="titulo-llamado">Tu próximo puente ya está en camino.</h2>
-        <p>Entra con tu correo @ucb.edu.bo y deja lista tu semana en un par de minutos.</p>
-        <div className={styles.llamadoBotones}>
-          <Link href="/login?modo=registro" className={styles.llamadoPrimario}>
-            <span>Crear mi cuenta</span>
-            <IconoFlechaDerecha tamano={18} />
-          </Link>
-          <Link href="/login" className={styles.llamadoSecundario}>
-            Ya tengo cuenta
-          </Link>
+      <motion.div
+        className={styles.llamadoCaja}
+        {...aparecer()}
+        onViewportEnter={() => setVisto(true)}
+        viewport={{ once: true, margin: "-120px" }}
+      >
+        <div className={styles.llamadoTexto}>
+          <h2 id="titulo-llamado">Tu próximo puente ya está en camino.</h2>
+          <p>Entra con tu correo @ucb.edu.bo y deja lista tu semana en un par de minutos.</p>
+          <div className={styles.llamadoBotones}>
+            <Link href="/login?modo=registro" className={styles.llamadoPrimario}>
+              <span>Crear mi cuenta</span>
+              <IconoFlechaDerecha tamano={18} />
+            </Link>
+            <Link href="/login" className={styles.llamadoSecundario}>
+              Ya tengo cuenta
+            </Link>
+          </div>
+        </div>
+
+        {/* La foto entra en franjas escalonadas detrás de una cortina marino, como bloques que se acomodan. */}
+        <div className={styles.llamadoFoto} data-visto={visto || reducir ? "" : undefined}>
+          {Array.from({ length: FRANJAS }, (_, i) => (
+            <div key={i} className={styles.franja} style={{ "--i": i } as CSSProperties} aria-hidden="true">
+              <div className={styles.franjaFoto}>
+                <Image src={fotoCaminando} alt="" fill sizes="(max-width: 960px) 100vw, 600px" placeholder="blur" />
+              </div>
+            </div>
+          ))}
+          <div className={styles.llamadoChip} aria-hidden="true">
+            <span className={styles.llamadoChipPunto} />
+            <span>
+              <b>Libre 10:30 – 12:00</b>
+              <small>Vóley en la cancha · 3 van</small>
+            </span>
+          </div>
         </div>
       </motion.div>
     </section>
