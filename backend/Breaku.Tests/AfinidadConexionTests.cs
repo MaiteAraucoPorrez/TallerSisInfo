@@ -144,6 +144,17 @@ public class CompararTestTests
         Assert.True(ReglasAfinidad.Coinciden(r));
     }
 
+    [Theory]
+    [InlineData(49, false)]
+    [InlineData(50, true)]
+    [InlineData(80, true)]
+    public void Compatibles_desde_50_de_afinidad(int afinidad, bool esperado)
+        => Assert.Equal(esperado, ReglasAfinidad.Coinciden(new ReglasAfinidad.Resultado(afinidad, ["Les gusta el deporte"])));
+
+    [Fact]
+    public void Con_afinidad_alta_pero_nada_concreto_en_comun_no_se_muestra()
+        => Assert.False(ReglasAfinidad.Coinciden(new ReglasAfinidad.Resultado(90, [])));
+
     [Fact]
     public void Sin_nada_en_comun_es_cero_y_no_se_muestra()
     {
