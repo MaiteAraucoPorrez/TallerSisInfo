@@ -16,11 +16,14 @@ export type Recomendacion = {
   votos?: number;
   /** Verificado por el equipo de BreakU. */
   verificado?: boolean;
+  /** HU30: tipos de actividad del lugar que al estudiante le suelen gustar («Porque te gusta…»). */
+  porQueTeGusta?: string[];
 };
 
 export type RespuestaRecomendacion = {
   consultaId: number;
-  estado: "OK" | "SIN_RESULTADOS";
+  /** `SIN_ZONA`: el estudiante todavía no eligió su campus; se le muestra el enlace a Ubicación. */
+  estado: "OK" | "SIN_RESULTADOS" | "SIN_ZONA";
   mensaje: string | null;
   recomendaciones: Recomendacion[];
 };

@@ -10,7 +10,7 @@ import { useSesion } from "@/lib/useSesion";
 import fotoGradas from "@/components/onboarding/fotos/estudiantes.webp";
 import FondoVivo from "./FondoVivo";
 import IconoDuo from "./IconosDuo";
-import { IconoDestello, IconoFlechaIzquierda, IconoLuna, IconoObjetivo, IconoPersonas, IconoRayo } from "./Iconos";
+import { IconoDestello, IconoFlechaIzquierda, IconoLuna, IconoObjetivo, IconoPersonas, IconoPin, IconoRayo } from "./Iconos";
 import { Entrada, Odometro, Pieza, RESORTE_TOQUE, SALIDA, seguirPuntero } from "./Movimiento";
 import { Selector } from "./Selectores";
 import estilos from "./Recomendaciones.module.css";
@@ -239,6 +239,19 @@ export default function Recomendaciones({ estadoInicial, minutosLibres, puenteIn
         <p className={estilos.vacio}>
           Todavía no tienes puentes. <Link href="/horario">Registra tu horario</Link> para recibir recomendaciones.
         </p>
+      )}
+
+      {/* Sin sede no hay desde dónde medir: en vez de «no hay opciones», se le pide elegir su campus. */}
+      {respuesta?.estado === "SIN_ZONA" && (
+        <motion.div className={estilos.sinResultados} initial={reducir ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <span className={estilos.sinResultadosIcono} aria-hidden="true">
+            <IconoPin tamano={26} />
+          </span>
+          <p>{respuesta.mensaje}</p>
+          <Link href="/configuracion/ubicacion" className={`hz-btn hz-btn-primary ${estilos.elegirCampus}`}>
+            Elegir mi campus
+          </Link>
+        </motion.div>
       )}
 
       {respuesta?.estado === "SIN_RESULTADOS" && (

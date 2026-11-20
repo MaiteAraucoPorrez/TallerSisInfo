@@ -113,6 +113,25 @@
   color: var(--ucb-amarillo-oscuro);
 }
 
+.porQue {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--ucb-amarillo-suave);
+  color: var(--ucb-amarillo-oscuro);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.porQue svg {
+  flex-shrink: 0;
+}
+
 .metricas {
   margin: 0;
   display: grid;
