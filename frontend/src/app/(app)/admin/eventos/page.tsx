@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import FotoEvento from "@/components/eventos/FotoEvento";
-import { Entrada, Pieza } from "@/components/app/Movimiento";
+import FondoVivo from "@/components/app/FondoVivo";
+import fotoEventos from "@/components/app/fotos/eventos.webp";
+import { IconoCalendario, IconoCheck, IconoPin, IconoReloj } from "@/components/app/Iconos";
+import { Entrada, Odometro, Pieza, seguirPuntero } from "@/components/app/Movimiento";
 import { ErrorApi } from "@/lib/api";
 import { EventoCampus, listarEventosPendientes, moderarEvento } from "@/lib/eventos";
 import { formatearFechaHora } from "@/lib/reglasFlyer";
@@ -71,43 +74,66 @@ export default function EventosPendientesPage() {
 
   return (
     <Entrada as="main" className={estilos.pagina}>
-      <Pieza as="header" className={estilos.portada}>
-        <span className={estilos.etiqueta}>Moderación</span>
-        <h1>Eventos pendientes</h1>
-        <p>Revisa el motivo y decide si publicar o rechazar cada evento. El autor recibirá una notificación con el resultado.</p>
+      {/* Misma portada que Eventos del estudiante: foto, luz que sigue al cursor y pastilla con ícono. */}
+      <Pieza as="header">
+        <div className={estilos.portada} onPointerMove={seguirPuntero}>
+          <FondoVivo foto={fotoEventos} enfoque="72% 45%" />
+          <span className={estilos.etiqueta}>
+            <IconoCalendario tamano={14} /> Moderación
+          </span>
+          <h1>Eventos pendientes</h1>
+          <p>Revisa el motivo y decide si publicar o rechazar cada evento. Quien lo creó recibe un aviso con el resultado.</p>
+          {!cargando && eventos.length > 0 && (
+            <div className={estilos.cifrasPortada} aria-live="polite">
+              <span>
+                <b><Odometro valor={eventos.length} /></b> {eventos.length === 1 ? "evento en revisión" : "eventos en revisión"}
+              </span>
+            </div>
+          )}
+        </div>
       </Pieza>
 
-      {error && <p className={estilos.error} role="alert">{error}</p>}
-      {mensaje && <p className={estilos.mensaje} role="status">{mensaje}</p>}
+      {error && <p className={`hz-banner ${estilos.banner}`} role="alert">{error}</p>}
+      {mensaje && <p className={estilos.mensaje} role="status"><IconoCheck tamano={16} /> {mensaje}</p>}
 
-      <section className={estilos.lista} aria-busy={cargando}>
-        <div className={estilos.encabezado}>
-          <div><h2>En revisión</h2><p>{eventos.length} {eventos.length === 1 ? "evento" : "eventos"}</p></div>
-        </div>
+      <Pieza as="section" className={estilos.lista}>
+        <h2 className={estilos.tituloLista}>En revisión</h2>
 
-        {cargando ? <p className={estilos.vacio}>Cargando eventos…</p> : eventos.length === 0 ? (
-          <p className={estilos.vacio}>No hay eventos pendientes de revisión.</p>
+        {cargando ? (
+          <div className={estilos.cargando} role="status" aria-label="Cargando eventos">
+            <span className="hz-skeleton" />
+            <span className="hz-skeleton" />
+          </div>
+        ) : eventos.length === 0 ? (
+          <div className={estilos.vacio}>
+            <span className={estilos.vacioIcono} aria-hidden="true"><IconoCheck tamano={26} /></span>
+            <strong>Todo al día</strong>
+            <span>No hay eventos pendientes de revisión. Cuando alguien publique uno que necesite revisión, aparece aquí solo.</span>
+          </div>
         ) : eventos.map((evento) => (
           <article key={evento.id} className={estilos.evento}>
             {evento.fotoUrl && <FotoEvento ruta={evento.fotoUrl} titulo={evento.titulo} />}
             <div className={estilos.detalle}>
+              <span className={estilos.estado}>En revisión</span>
               <h3>{evento.titulo}</h3>
-              <p className={estilos.fecha}>{formatearFechaHora(evento.inicio)} – {formatearFechaHora(evento.fin)}</p>
-              <p><strong>Lugar:</strong> {evento.lugarId === null ? `Fuera del campus · ${evento.lugar}` : evento.lugar}</p>
-              <p><strong>Asistencia:</strong> {evento.asistencia === "FIJA" ? "Hay que llegar a la hora" : `Libre, ${evento.visitaMin}–${evento.visitaMax} min`}</p>
+              <ul className={estilos.datos}>
+                <li><IconoReloj tamano={15} /> {formatearFechaHora(evento.inicio)} – {formatearFechaHora(evento.fin)}</li>
+                <li><IconoPin tamano={15} /> {evento.lugarId === null ? `Fuera del campus · ${evento.lugar}` : evento.lugar}</li>
+                <li><IconoCalendario tamano={15} /> {evento.asistencia === "FIJA" ? "Hay que llegar a la hora" : `Asistencia libre, ${evento.visitaMin}–${evento.visitaMax} min`}</li>
+              </ul>
               {evento.descripcion && <p className={estilos.descripcion}>{evento.descripcion}</p>}
-              {evento.motivo && <p className={estilos.motivo}><strong>Motivo de revisión:</strong> {evento.motivo}</p>}
+              {evento.motivo && <p className={estilos.motivo}><strong>Por qué está en revisión:</strong> {evento.motivo}</p>}
               {evento.estado === "PENDIENTE" && (
                 <>
-                  <label className={estilos.campo}>
-                    <span>Motivo si lo rechazas <small>(obligatorio para rechazar)</small></span>
+                  <label className={`hz-campo ${estilos.campo}`}>
+                    <span>Motivo si lo rechazas <em>(obligatorio para rechazar)</em></span>
                     <textarea maxLength={500} rows={3} value={motivos[evento.id] ?? ""} onChange={(e) => setMotivos((actuales) => ({ ...actuales, [evento.id]: e.target.value }))} />
                   </label>
                   <div className={estilos.acciones}>
-                    <button type="button" className={estilos.secundario} disabled={procesando !== null} onClick={() => void resolver(evento, "RECHAZADO")}>
+                    <button type="button" className="hz-btn hz-btn-peligro" disabled={procesando !== null} onClick={() => void resolver(evento, "RECHAZADO")}>
                       {procesando === evento.id ? "Guardando…" : "Rechazar"}
                     </button>
-                    <button type="button" className={estilos.primario} disabled={procesando !== null} onClick={() => void resolver(evento, "PUBLICADO")}>
+                    <button type="button" className="hz-btn hz-btn-primary" disabled={procesando !== null} onClick={() => void resolver(evento, "PUBLICADO")}>
                       {procesando === evento.id ? "Guardando…" : "Aprobar y publicar"}
                     </button>
                   </div>
@@ -116,7 +142,7 @@ export default function EventosPendientesPage() {
             </div>
           </article>
         ))}
-      </section>
+      </Pieza>
     </Entrada>
   );
 }
