@@ -16,6 +16,15 @@ test("los avisos del estudiante conservan su destino", () => {
   assert.equal(rutaNotificacion({ tipo: "SANCION_ADVERTENCIA" }), null);
 });
 
+test("quien creó la comunidad ve quién se sumó o se bajó y va a su comunidad", () => {
+  assert.deepEqual(presentacionNotificacion("ASISTENCIA_COMUNIDAD"), {
+    titulo: "Cambió quién va a tu grupo",
+    clase: "invitacion",
+    icono: "personas",
+  });
+  assert.equal(rutaNotificacion({ tipo: "ASISTENCIA_COMUNIDAD", comunidadId: 12 }), "/comunidades?pestana=descubrir&comunidad=12");
+});
+
 test("la bandeja vacía explica «Sin leer» y le habla al admin de lo suyo", () => {
   assert.equal(bandejaVacia("sin-leer", false).titulo, "Ya leíste todo");
   assert.match(bandejaVacia("todas", true).detalle, /reporte/);

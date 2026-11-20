@@ -7,6 +7,8 @@ export type Notificacion = {
     | "DESPUES_DE_CLASES"
     | "INVITACION_COMUNIDAD"
     | "COMUNIDAD_CERRADA"
+    // Para quien creó la comunidad (migración 031): alguien se sumó o se bajó. Uno por comunidad, se reemplaza.
+    | "ASISTENCIA_COMUNIDAD"
     | "SANCION_ADVERTENCIA"
     | "CONEXION_SOLICITADA"
     | "CONEXION_ACEPTADA"

@@ -18,6 +18,8 @@ const PRESENTACIONES: Record<string, PresentacionNotificacion> = {
   DESPUES_DE_CLASES: { titulo: "Terminaste tus clases", clase: "puente", icono: "rayo" },
   INVITACION_COMUNIDAD: { titulo: "Invitación a una comunidad", clase: "invitacion", icono: "personas" },
   COMUNIDAD_CERRADA: { titulo: "El grupo se llenó", clase: "cerrada", icono: "personas" },
+  // Para quien creó la comunidad: alguien se sumó o se bajó. Lleva a la comunidad, donde está «Quiénes van».
+  ASISTENCIA_COMUNIDAD: { titulo: "Cambió quién va a tu grupo", clase: "invitacion", icono: "personas" },
   // HU28: la advertencia del administrador. No lleva a otra pantalla: el aviso ya dice el motivo.
   SANCION_ADVERTENCIA: { titulo: "Advertencia del administrador", clase: "advertencia", icono: "bandera" },
   // HU12: saludos de «Libres contigo». Llevan a esa pestaña, donde se responden o se ve el correo.
