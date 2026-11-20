@@ -42,6 +42,8 @@ test("la suspensión sin fecha vale (7 días por defecto) y con fecha tiene que 
   assert.equal(validarSancion("SUSPENSION", "Acoso", "2026-11-20T10:00", AHORA), null);
   assert.match(validarSancion("SUSPENSION", "Acoso", "2026-11-12T10:00", AHORA) ?? "", /posterior/);
   assert.match(validarSancion("SUSPENSION", "Acoso", "no-es-fecha", AHORA) ?? "", /válida/);
+  assert.match(validarSancion("SUSPENSION", "Acoso", "2026-11-25T", AHORA) ?? "", /día y la hora/);
+  assert.match(validarSancion("SUSPENSION", "Acoso", "T10:00", AHORA) ?? "", /día y la hora/);
 });
 
 test("el texto de ayuda dice que sin fecha durará 7 días", () => {

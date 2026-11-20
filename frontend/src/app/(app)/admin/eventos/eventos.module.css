@@ -1,201 +1,305 @@
+/* Moderación de eventos con el mismo estilo que Eventos del estudiante: portada con foto, tarjetas blancas y botones de la app. */
 .pagina {
-  width: min(1050px, calc(100% - 32px));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1680px;
   margin: 0 auto;
-  padding: 28px 0 48px;
+  padding: 20px 16px 120px;
 }
 
 .portada {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  justify-items: start;
+  min-height: 260px;
+  align-content: end;
   padding: clamp(24px, 5vw, 42px);
-  border-radius: 26px;
-  background: linear-gradient(135deg, var(--ucb-marino), #0c5d80);
-  color: white;
+  border-radius: 28px;
+  background: var(--ucb-marino);
+  color: #fff;
   box-shadow: var(--sombra-3);
 }
 
 .etiqueta {
-  color: #ffdd73;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.etiqueta svg {
+  color: var(--ucb-amarillo);
 }
 
 .portada h1 {
-  margin: 10px 0;
+  max-width: 14ch;
+  margin: 14px 0 8px;
   font-family: var(--fuente-titulo), system-ui, sans-serif;
-  font-size: clamp(1.9rem, 5vw, 2.8rem);
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 .portada p {
-  max-width: 700px;
+  max-width: 46ch;
   margin: 0;
   color: rgba(255, 255, 255, 0.82);
-  line-height: 1.6;
+  line-height: 1.65;
+}
+
+.cifrasPortada {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+}
+
+.cifrasPortada b {
+  margin-right: 4px;
+  color: var(--ucb-amarillo);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mensaje {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--exito) 25%, transparent);
+  border-radius: 14px;
+  background: var(--exito-fondo);
+  color: var(--exito);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.banner {
+  margin: 16px 0 0;
 }
 
 .lista {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   margin-top: 20px;
-  padding: clamp(16px, 3vw, 28px);
-  border: 1px solid var(--borde-suave);
-  border-radius: 22px;
-  background: var(--superficie);
-  box-shadow: var(--sombra-2);
 }
 
-.encabezado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.tituloLista {
+  margin: 0;
+  color: var(--ucb-marino);
+  font-family: var(--fuente-titulo), system-ui, sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.cargando {
+  display: grid;
   gap: 14px;
 }
 
-.encabezado h2 {
-  margin: 0 0 4px;
-  color: var(--ucb-marino);
+.cargando :global(.hz-skeleton) {
+  display: block;
+  height: 180px;
 }
 
-.encabezado p {
-  margin: 0;
-  color: var(--texto-tenue);
-}
+/* ---------- Tarjeta de cada evento ---------- */
 
 .evento {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 18px;
-  padding: 16px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 22px;
+  padding: 18px;
   border: 1px solid var(--borde-suave);
-  border-radius: 18px;
+  border-radius: 24px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-1);
+  transition: box-shadow 250ms var(--curva-salida), transform 250ms var(--curva-salida);
 }
 
-/* Sin foto, el detalle es el único hijo: ocupa todo el ancho en vez de caer en la columna de 220px de la foto. */
+@media (hover: hover) and (pointer: fine) {
+  .evento:hover {
+    box-shadow: var(--sombra-2);
+    transform: translateY(-2px);
+  }
+}
+
+/* Sin foto, el detalle es el único hijo: ocupa todo el ancho en vez de caer en la columna de la foto. */
 .evento > :only-child {
   grid-column: 1 / -1;
 }
 
+.evento > :first-child:not(:only-child) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .detalle {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 10px;
   min-width: 0;
 }
 
+.estado {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ucb-amarillo-suave);
+  color: var(--ucb-amarillo-oscuro);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
 .detalle h3 {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--ucb-marino);
-  font-size: 1.2rem;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
-.detalle p {
+.datos {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   color: var(--texto-suave);
-  line-height: 1.5;
+  font-size: 0.94rem;
 }
 
-.fecha {
-  color: var(--texto-tenue) !important;
+.datos li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.datos svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--ucb-azul-medio);
 }
 
 .descripcion {
+  margin: 0;
+  color: var(--texto);
+  line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .motivo {
-  padding: 10px 12px;
-  border-radius: 11px;
-  background: #fff3cc;
-  color: #604900 !important;
+  justify-self: stretch;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--ucb-amarillo);
+  border-radius: 14px;
+  background: var(--ucb-amarillo-suave);
+  color: var(--ucb-amarillo-oscuro);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .campo {
-  display: grid;
-  gap: 7px;
-  margin-top: 14px;
-  color: var(--texto);
-  font-weight: 700;
-}
-
-.campo small {
-  color: var(--texto-tenue);
-  font-weight: 500;
+  justify-self: stretch;
+  margin-top: 4px;
 }
 
 .campo textarea {
   box-sizing: border-box;
   width: 100%;
-  padding: 11px 12px;
-  border: 1px solid var(--borde-suave);
-  border-radius: 12px;
+  min-height: 96px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
   font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
   resize: vertical;
+  transition: border-color 200ms ease, box-shadow 250ms var(--curva-salida);
+}
+
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--ucb-celeste);
+  box-shadow: 0 0 0 4px rgba(47, 127, 209, 0.16);
 }
 
 .acciones {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 12px;
+  justify-self: stretch;
 }
 
-.primario,
-.secundario {
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
+/* ---------- Sin pendientes ---------- */
 
-.primario {
-  background: var(--ucb-marino);
-  color: white;
-}
-
-.secundario {
-  border-color: var(--borde-suave);
+.vacio {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 44px 20px;
+  border: 1.5px dashed var(--borde);
+  border-radius: 24px;
   background: var(--superficie);
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.vacio strong {
   color: var(--ucb-marino);
+  font-size: 1.1rem;
 }
 
-.primario:disabled,
-.secundario:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.vacio span:last-child {
+  max-width: 46ch;
+  line-height: 1.55;
 }
 
-.error,
-.mensaje {
-  padding: 12px 14px;
-  border-radius: 12px;
-}
-
-.error {
-  background: var(--error-fondo);
-  color: var(--error);
-}
-
-.mensaje {
+.vacioIcono {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 6px;
+  border-radius: 18px;
   background: var(--exito-fondo);
   color: var(--exito);
 }
 
-.vacio {
-  padding: 26px;
-  color: var(--texto-tenue);
-  text-align: center;
-}
-
-@media (max-width: 650px) {
-  .pagina {
-    width: min(100% - 22px, 1050px);
-    padding-top: 16px;
-  }
-
+@media (max-width: 760px) {
   .evento {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .acciones {
     flex-direction: column-reverse;
+  }
+
+  .acciones :global(.hz-btn) {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evento {
+    transition: none;
   }
 }

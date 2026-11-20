@@ -3,6 +3,7 @@
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "motion/react";
+import CampoFechaHora from "@/components/eventos/CampoFechaHora";
 import { sancionarUsuario } from "@/lib/usuarios";
 import {
   ETIQUETA_TIPO,
@@ -33,13 +34,6 @@ const TITULO: Record<TipoSancion, string> = {
   SUSPENSION: "Suspender a",
   BAJA: "Dar de baja a",
 };
-
-/** Un valor para el atributo min de datetime-local (hora local, sin segundos). */
-function ahoraLocal(): string {
-  const d = new Date(Date.now() + 60_000);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
-}
 
 /** Formulario de sanción. Motivo obligatorio; fecha de fin solo en la suspensión; la baja pide confirmación explícita. */
 export default function FormularioSancion({ usuario, tipo: tipoInicial, elegirTipo = false, reporteId = null, onCerrar, onAplicada }: Props) {
@@ -164,15 +158,16 @@ export default function FormularioSancion({ usuario, tipo: tipoInicial, elegirTi
         )}
 
         {tipo === "SUSPENSION" && (
-          <label className="hz-campo">
-            <span>
+          <div className="hz-campo" role="group" aria-labelledby={`${idTitulo}-fin`} aria-describedby={`${idTitulo}-hasta`}>
+            <span id={`${idTitulo}-fin`}>
               Fin de la suspensión <em>(opcional)</em>
             </span>
-            <input type="datetime-local" value={hasta} min={ahoraLocal()} onChange={(e) => setHasta(e.target.value)} aria-describedby={`${idTitulo}-hasta`} />
+            {/* Los selectores de la app en vez del control nativo del navegador, como en Eventos. Solo deja elegir desde hoy. */}
+            <CampoFechaHora valor={hasta} onCambio={setHasta} nombre="fin de la suspensión" />
             <span id={`${idTitulo}-hasta`} className="hz-nota">
               {ayudaFechaFin(hasta)}
             </span>
-          </label>
+          </div>
         )}
 
         {tipo === "BAJA" && (

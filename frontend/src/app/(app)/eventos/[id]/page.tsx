@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import FondoVivo from "@/components/app/FondoVivo";
+import fotoEventos from "@/components/app/fotos/eventos.webp";
+import { IconoCalendario, IconoFlechaIzquierda, IconoPin, IconoReloj } from "@/components/app/Iconos";
+import { Entrada, Pieza, seguirPuntero } from "@/components/app/Movimiento";
 import FotoEvento from "@/components/eventos/FotoEvento";
 import { EventoPublico, obtenerEventoDelCampus } from "@/lib/eventos";
 import { ahoraBoliviaParaFormulario, fechaBoliviaParaFormulario, rangoLegible } from "@/lib/reglasEventos";
@@ -50,41 +54,75 @@ export default function DetalleEvento() {
   const hoy = ahoraBoliviaParaFormulario().slice(0, 10);
 
   return (
-    <div className={estilos.pagina}>
-      <Link href="/eventos" className={estilos.volver}>
-        ← Volver a eventos
-      </Link>
+    <Entrada as="main" className={estilos.pagina}>
+      <Pieza>
+        <Link href="/eventos" className={estilos.volver}>
+          <IconoFlechaIzquierda tamano={18} /> Volver a eventos
+        </Link>
+      </Pieza>
 
       {!actual ? (
-        <p className={estilos.estado} role="status">Cargando el evento…</p>
+        <Pieza>
+          <div className={estilos.cargando} role="status" aria-label="Cargando el evento">
+            <span className="hz-skeleton" />
+          </div>
+        </Pieza>
       ) : actual.error || !actual.evento ? (
-        <div className={estilos.error} role="alert">
-          <span>{actual.error || "El evento no existe."}</span>
-          {numero !== null && (
-            <button type="button" className={estilos.reintentar} onClick={() => setIntento((n) => n + 1)}>
-              Reintentar
-            </button>
-          )}
-        </div>
-      ) : (
-        <article className={estilos.tarjeta}>
-          {actual.evento.fotoUrl && <FotoEvento ruta={actual.evento.fotoUrl} titulo={actual.evento.titulo} />}
-          <h1>{actual.evento.titulo}</h1>
-          <p className={estilos.hora}>
-            {rangoLegible(
-              fechaBoliviaParaFormulario(actual.evento.inicio),
-              fechaBoliviaParaFormulario(actual.evento.fin),
-              hoy,
+        <Pieza>
+          <div className="hz-banner" role="alert">
+            <span>{actual.error || "El evento no existe."}</span>
+            {numero !== null && (
+              <button type="button" className="hz-btn" onClick={() => setIntento((n) => n + 1)}>
+                Reintentar
+              </button>
             )}
-          </p>
-          <p className={estilos.lugar}>
-            {actual.evento.lugar}
-            {actual.evento.fueraDelCampus && <span className={estilos.fuera}>Fuera del campus</span>}
-          </p>
-          {actual.evento.descripcion && <p className={estilos.descripcion}>{actual.evento.descripcion}</p>}
-          <p className={estilos.asistencia}>{textoAsistencia(actual.evento)}</p>
-        </article>
+          </div>
+        </Pieza>
+      ) : (
+        <>
+          {/* Portada como la de Eventos: foto con velo marino y luz que sigue al cursor. */}
+          <Pieza as="header" className={estilos.portada} onPointerMove={seguirPuntero}>
+            <FondoVivo foto={fotoEventos} enfoque="72% 45%" />
+            <span className={estilos.etiqueta}>
+              <IconoCalendario tamano={14} /> Evento del campus
+            </span>
+            <h1>{actual.evento.titulo}</h1>
+            <div className={estilos.chips}>
+              <span>
+                <IconoReloj tamano={15} />
+                {rangoLegible(
+                  fechaBoliviaParaFormulario(actual.evento.inicio),
+                  fechaBoliviaParaFormulario(actual.evento.fin),
+                  hoy,
+                )}
+              </span>
+              <span>
+                <IconoPin tamano={15} /> {actual.evento.lugar}
+              </span>
+              {actual.evento.fueraDelCampus && <span className={estilos.fuera}>Fuera del campus</span>}
+            </div>
+          </Pieza>
+
+          <Pieza as="section" className={estilos.tarjeta}>
+            {actual.evento.fotoUrl && (
+              <div className={estilos.foto}>
+                <FotoEvento ruta={actual.evento.fotoUrl} titulo={actual.evento.titulo} />
+              </div>
+            )}
+            <div className={estilos.cuerpo}>
+              <h2>Sobre el evento</h2>
+              {actual.evento.descripcion ? (
+                <p className={estilos.descripcion}>{actual.evento.descripcion}</p>
+              ) : (
+                <p className={estilos.sinDescripcion}>Quien lo publicó no agregó una descripción.</p>
+              )}
+              <p className={estilos.asistencia}>
+                <IconoCalendario tamano={16} /> {textoAsistencia(actual.evento)}
+              </p>
+            </div>
+          </Pieza>
+        </>
       )}
-    </div>
+    </Entrada>
   );
 }

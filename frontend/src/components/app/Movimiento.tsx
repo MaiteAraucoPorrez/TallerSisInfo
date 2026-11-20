@@ -29,10 +29,21 @@ export function Entrada({ children, className, as = "div" }: { children: React.R
   );
 }
 
-export function Pieza({ children, className, as = "div" }: { children: React.ReactNode; className?: string; as?: "div" | "section" | "header" | "li" }) {
+export function Pieza({
+  children,
+  className,
+  as = "div",
+  onPointerMove,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  as?: "div" | "section" | "header" | "li";
+  /** Para portadas con `FondoVivo`: pasar `seguirPuntero` y la luz sigue al cursor. */
+  onPointerMove?: (evento: React.PointerEvent<HTMLElement>) => void;
+}) {
   const Componente = motion[as];
   return (
-    <Componente className={className} variants={pieza}>
+    <Componente className={className} variants={pieza} onPointerMove={onPointerMove}>
       {children}
     </Componente>
   );

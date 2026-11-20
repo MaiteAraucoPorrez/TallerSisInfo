@@ -24,10 +24,12 @@
     box-shadow 200ms var(--curva-salida);
 }
 
-.dato:hover:not(:disabled),
-.datoFalta:hover:not(:disabled) {
-  border-color: var(--ucb-celeste);
-  box-shadow: 0 0 0 3px rgba(47, 127, 209, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .dato:hover:not(:disabled),
+  .datoFalta:hover:not(:disabled) {
+    border-color: var(--ucb-celeste);
+    box-shadow: 0 0 0 3px rgba(47, 127, 209, 0.12);
+  }
 }
 
 .dato:focus-visible,
@@ -60,9 +62,11 @@
   color: var(--texto-tenue);
 }
 
-.dato:hover:not(:disabled) .lapiz,
-.datoFalta:hover:not(:disabled) .lapiz {
-  color: var(--ucb-celeste);
+@media (hover: hover) and (pointer: fine) {
+  .dato:hover:not(:disabled) .lapiz,
+  .datoFalta:hover:not(:disabled) .lapiz {
+    color: var(--ucb-celeste);
+  }
 }
 
 .dato strong,

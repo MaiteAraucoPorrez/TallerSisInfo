@@ -208,8 +208,10 @@
   bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 45;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(360px, calc(100% - 24px));
+  /* Una columna por destino (Inicio, Panel Admin, Eventos…): si se agrega otro, no cae a una segunda fila. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: min(420px, calc(100% - 24px));
   margin: 0 auto;
   padding: 6px;
   box-sizing: border-box;
