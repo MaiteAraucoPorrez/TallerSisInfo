@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import ArteCategoria from "@/components/inicio/ArteCategoria";
 import { Recomendacion, Valoracion, guardarFeedback } from "@/lib/recomendaciones";
+import { estaEnElCampus } from "@/lib/reglasHoyCampus";
 import { textoPorQueTeGusta } from "@/lib/reglasRecomendaciones";
 import { IconoCheck, IconoDestello, IconoPin, IconoPulgarAbajo, IconoPulgarArriba, IconoReloj } from "./Iconos";
 import { NumeroAnimado, RESORTE_TOQUE, SALIDA } from "./Movimiento";
@@ -68,9 +69,7 @@ export default function TarjetaRecomendacion({ recomendacion: r, destacada = fal
             <dt>
               <IconoPin tamano={14} /> Distancia
             </dt>
-            <dd>
-              <NumeroAnimado valor={r.distanciaM} /> m
-            </dd>
+            <dd>{estaEnElCampus(r.distanciaM) ? "En el campus" : <><NumeroAnimado valor={r.distanciaM} /> m</>}</dd>
           </div>
           <div>
             <dt>

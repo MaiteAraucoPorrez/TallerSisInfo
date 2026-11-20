@@ -39,6 +39,15 @@
   order: 4;
 }
 
+/* En el celular van al final, después de los atajos. */
+.zonaHoy {
+  order: 5;
+}
+
+.zonaLibres {
+  order: 6;
+}
+
 .columnaIzquierda > *,
 .columnaDerecha > * {
   min-width: 0;

@@ -3,6 +3,7 @@ import { IconoPin, IconoReloj } from "@/components/app/Iconos";
 import Puntuacion, { SelloVerificado } from "@/components/app/Puntuacion";
 import estilos from "@/components/app/TarjetaLugar.module.css";
 import { LugarViable } from "@/lib/lugares";
+import { estaEnElCampus } from "@/lib/reglasHoyCampus";
 
 const CON_ILUSTRACION = ["comida", "estudio", "descanso", "deporte"];
 
@@ -34,12 +35,20 @@ export default function TarjetaLugarViable({ lugar, minutosDisponibles }: Props)
         <h3 className={estilos.nombre}>{lugar.nombre}</h3>
         {lugar.descripcion && <p className={estilos.descripcion}>{lugar.descripcion}</p>}
         <p className={estilos.meta}>
-          <span>
-            <IconoPin tamano={14} /> {lugar.distanciaM} m
-          </span>
-          <span>
-            <IconoReloj tamano={14} /> Ida y vuelta {lugar.tiempoTrasladoMin} min
-          </span>
+          {estaEnElCampus(lugar.distanciaM) ? (
+            <span>
+              <IconoPin tamano={14} /> En el campus
+            </span>
+          ) : (
+            <>
+              <span>
+                <IconoPin tamano={14} /> {lugar.distanciaM} m
+              </span>
+              <span>
+                <IconoReloj tamano={14} /> Ida y vuelta {lugar.tiempoTrasladoMin} min
+              </span>
+            </>
+          )}
           <span>Actividad {lugar.duracionEstimadaMin} min</span>
         </p>
         <p className={estilos.total}>
