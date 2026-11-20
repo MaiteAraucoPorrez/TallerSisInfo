@@ -25,7 +25,7 @@ type Props = {
 };
 
 /**
- * «Libres contigo»: hasta 3 compañeros de tu sede libres a la misma hora (matching de HU12), con su compatibilidad y
+ * «Libres contigo»: hasta 3 compañeros de tu sede libres a la misma hora y compatibles en el test (matching de HU12), con su afinidad y
  * un «Saludar» rápido. Sin test o sin consentimiento invita a activarlo; sin sede no se muestra (Sugerencias ya lo pide).
  */
 export default function LibresContigoAhora({ puente, cuando, className = "" }: Props) {
@@ -160,8 +160,9 @@ export default function LibresContigoAhora({ puente, cuando, className = "" }: P
                     {c.carrera ?? "Estudiante UCB"} · {c.minutosEnComun} min en común
                   </small>
                 </span>
-                <span className={estilos.compatibilidad} title="Compatibilidad: 60 % test y 40 % tiempo libre">
-                  {c.compatibilidad}%
+                {/* La afinidad del test (50 % o más para aparecer); el tiempo en común ya va en la línea de la carrera. */}
+                <span className={estilos.compatibilidad} title="Afinidad según el test" aria-label={`${c.afinidad} % de afinidad`}>
+                  {c.afinidad}%
                 </span>
                 <span className={estilos.accion}>{accion(c)}</span>
               </motion.li>
