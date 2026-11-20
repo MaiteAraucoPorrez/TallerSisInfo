@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { ErrorApi } from "@/lib/api";
@@ -164,6 +165,11 @@ export default function ChatRecomendaciones({ puente }: { puente?: Puente }) {
                         {m.respuesta.mensaje ??
                           `Para "${m.consulta}" te recomiendo ${m.respuesta.recomendaciones.length === 1 ? "este lugar" : `estos ${m.respuesta.recomendaciones.length} lugares`}:`}
                       </div>
+                      {m.respuesta.estado === "SIN_ZONA" && (
+                        <Link href="/configuracion/ubicacion" className={`hz-btn hz-btn-primary ${estilos.elegirCampus}`}>
+                          Elegir mi campus
+                        </Link>
+                      )}
                       {m.respuesta.estado === "OK" && (
                         <motion.ol
                           className={estilos.tarjetas}

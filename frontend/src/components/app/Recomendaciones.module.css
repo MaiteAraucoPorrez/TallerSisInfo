@@ -295,6 +295,10 @@
   text-align: center;
 }
 
+.elegirCampus {
+  text-decoration: none;
+}
+
 .sinResultados p {
   margin: 0;
   max-width: 44ch;

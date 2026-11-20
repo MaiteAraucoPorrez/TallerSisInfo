@@ -288,3 +288,10 @@
     animation: none;
   }
 }
+
+/* Sin sede: el asistente pide elegir el campus y deja el atajo a Ubicación. */
+.elegirCampus {
+  justify-self: start;
+  margin-top: 8px;
+  text-decoration: none;
+}
