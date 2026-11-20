@@ -39,6 +39,15 @@
   order: 4;
 }
 
+/* En el celular van al final, después de los atajos. */
+.zonaHoy {
+  order: 5;
+}
+
+.zonaLibres {
+  order: 6;
+}
+
 .columnaIzquierda > *,
 .columnaDerecha > * {
   min-width: 0;
@@ -547,6 +556,18 @@
 
   .carrusel {
     grid-auto-columns: minmax(200px, 45%);
+  }
+}
+
+/*
+ * Las columnas cambian de alto según el día (actividades, eventos en tu puente…). Si la izquierda es más larga, la
+ * derecha se queda a la vista al bajar en vez de dejar un hueco. Solo en pantallas con alto para mostrarla entera.
+ */
+@media (min-width: 900px) and (min-height: 860px) {
+  .columnaDerecha {
+    position: sticky;
+    top: 88px;
+    align-self: start;
   }
 }
 

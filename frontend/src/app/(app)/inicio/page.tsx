@@ -21,6 +21,9 @@ import { Bloque, listarHorario } from "@/lib/horario";
 import { LugarViable, ResultadoLugares, buscarLugaresViables } from "@/lib/lugares";
 import { ESTADOS_ANIMO } from "@/lib/maqueta";
 import { Puente, listarPuentes, duracionMin, esDespuesDeClases, hhmm, soloEntreClases } from "@/lib/puentes";
+import HoyEnElCampus from "@/components/inicio/HoyEnElCampus";
+import LibresContigoAhora from "@/components/inicio/LibresContigoAhora";
+import { estaEnElCampus } from "@/lib/reglasHoyCampus";
 import { useSesion } from "@/lib/useSesion";
 import Puntuacion, { SelloVerificado } from "@/components/app/Puntuacion";
 import IconoDuo, { type NombreIconoDuo } from "@/components/app/IconosDuo";
@@ -181,6 +184,10 @@ export default function Inicio() {
   }, [puentes, diaHoy]);
 
   const puenteSugerencias = foco ?? otroDia?.puente;
+  // «Libres contigo» mira el mismo puente que las sugerencias: el de hoy (activo o próximo) o el primero de otro día.
+  const cuandoLibres = puenteSugerencias
+    ? `${foco ? "Hoy" : `El ${otroDia?.datos.dia.toLowerCase()}`} de ${hhmm(puenteSugerencias.horaInicio)} a ${hhmm(puenteSugerencias.horaFin)}`
+    : "";
 
   useEffect(() => {
     if (!sesion || !puenteSugerencias) return;
@@ -460,12 +467,21 @@ export default function Inicio() {
                 <span className={`${estilos.lugarCategoria} ${estilos[`cat_${l.categoria.toLowerCase()}`] ?? ""}`}>{l.categoria}</span>
                 <h3 className={estilos.lugarNombre}>{l.nombre}</h3>
                 <p className={estilos.lugarMeta}>
-                  <span>
-                    <IconoPin tamano={14} /> {l.distanciaM} m
-                  </span>
-                  <span>
-                    <IconoReloj tamano={14} /> {l.tiempoTrasladoMin} min
-                  </span>
+                  {/* Un lugar en la misma coordenada del campus mostraba «0 m · 0 min». */}
+                  {estaEnElCampus(l.distanciaM) ? (
+                    <span>
+                      <IconoPin tamano={14} /> En el campus
+                    </span>
+                  ) : (
+                    <>
+                      <span>
+                        <IconoPin tamano={14} /> {l.distanciaM} m
+                      </span>
+                      <span>
+                        <IconoReloj tamano={14} /> {l.tiempoTrasladoMin} min
+                      </span>
+                    </>
+                  )}
                 </p>
               </motion.article>
             ))}
@@ -480,6 +496,9 @@ export default function Inicio() {
           )}
         </p>
       </Pieza>
+
+      {/* Debajo de las sugerencias: con quién aprovechar ese mismo rato. Equilibra las dos columnas en la laptop. */}
+      <LibresContigoAhora puente={puenteSugerencias} cuando={cuandoLibres} className={estilos.zonaLibres} />
 
       </div>
 
@@ -533,6 +552,9 @@ export default function Inicio() {
           </span>
         </MotionLink>
       </Pieza>
+
+      {/* En la laptop, la columna derecha cierra con lo que pasa hoy en el campus. */}
+      <HoyEnElCampus className={estilos.zonaHoy} />
 
       </div>
 
