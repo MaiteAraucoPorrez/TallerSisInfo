@@ -12,8 +12,11 @@ public static partial class ReglasAfinidad
     public const int Version = 1;
     public const int MinutosEstimados = 2;
 
-    /// <summary>Por debajo de esto, «no coinciden en nada» y no se muestran (aunque coincidan en tiempo).</summary>
-    public const int AfinidadMinima = 35;
+    /// <summary>
+    /// Desde aquí dos estudiantes son «compatibles» según el test. Por debajo no se muestran aunque coincidan en tiempo.
+    /// Maite lo subió de 35 a 50 (2026-11-20): con 35 aparecía gente que se parecía poco.
+    /// </summary>
+    public const int AfinidadMinima = 50;
 
     /// <summary>La compatibilidad final: 60 % el test y 40 % el tiempo libre que comparten.</summary>
     public const double PesoTest = 0.6;
