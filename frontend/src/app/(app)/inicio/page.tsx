@@ -402,11 +402,15 @@ export default function Inicio() {
         <Pieza as="section" className={`${estilos.tarjeta} ${estilos.zonaEventos}`} aria-label="Eventos que caben en tus puentes de hoy">
           <div className={estilos.encabezado}>
             <h2 className={estilos.subtitulo}>Eventos en tu puente</h2>
+            <Link href="/eventos" className={estilos.verTodo}>
+              Ver todos <IconoFlechaDerecha tamano={14} />
+            </Link>
           </div>
           <ul className={estilos.actividades}>
             {eventosEnPuente.map((evento) => (
               <li key={evento.id}>
-                <div className={`${estilos.actividad} ${estilos.eventoPuenteItem}`}>
+                {/* Lleva al detalle del evento: descripción, cómo es la asistencia y el botón para reportarlo. */}
+                <Link href={`/eventos/${evento.id}`} className={`${estilos.actividad} ${estilos.eventoPuenteItem}`}>
                   <span className={estilos.eventoPuenteTexto}>
                     <strong>{evento.titulo}</strong>
                     <small>
@@ -417,7 +421,7 @@ export default function Inicio() {
                   <span className={estilos.actividadInvitada}>
                     {evento.asistencia === "FIJA" ? "Hay que llegar a la hora" : `${evento.minutosPuedeQuedarse} min`}
                   </span>
-                </div>
+                </Link>
               </li>
             ))}
           </ul>

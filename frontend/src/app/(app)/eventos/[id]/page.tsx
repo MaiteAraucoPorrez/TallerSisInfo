@@ -7,6 +7,7 @@ import FondoVivo from "@/components/app/FondoVivo";
 import fotoEventos from "@/components/app/fotos/eventos.webp";
 import { IconoCalendario, IconoFlechaIzquierda, IconoPin, IconoReloj } from "@/components/app/Iconos";
 import { Entrada, Pieza, seguirPuntero } from "@/components/app/Movimiento";
+import ReportarObjeto from "@/components/app/ReportarObjeto";
 import FotoEvento from "@/components/eventos/FotoEvento";
 import { EventoPublico, obtenerEventoDelCampus } from "@/lib/eventos";
 import { ahoraBoliviaParaFormulario, fechaBoliviaParaFormulario, rangoLegible } from "@/lib/reglasEventos";
@@ -119,6 +120,11 @@ export default function DetalleEvento() {
               <p className={estilos.asistencia}>
                 <IconoCalendario tamano={16} /> {textoAsistencia(actual.evento)}
               </p>
+              {/* Reporte de un evento inapropiado: va a la bandeja del admin y su respuesta llega en «Mis reportes». */}
+              <div className={estilos.pie}>
+                <span>¿Algo no está bien con este evento?</span>
+                <ReportarObjeto tipo="EVENTO" id={actual.evento.id} nombre={actual.evento.titulo} />
+              </div>
             </div>
           </Pieza>
         </>

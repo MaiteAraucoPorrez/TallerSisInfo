@@ -182,6 +182,19 @@
   color: var(--ucb-azul-medio);
 }
 
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borde-suave);
+  color: var(--texto-tenue);
+  font-size: 0.88rem;
+}
+
 @media (max-width: 760px) {
   .tarjeta:has(.foto) {
     grid-template-columns: minmax(0, 1fr);
