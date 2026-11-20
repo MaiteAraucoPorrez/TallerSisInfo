@@ -10,6 +10,9 @@ public sealed class AsistenciaRepository : IAsistenciaRepository
     private readonly AppDbContext _db;
     public AsistenciaRepository(AppDbContext db) => _db = db;
 
+    /// <summary>ER_CHECK_CONSTRAINT_VIOLATED de MySQL: la base todavía no tiene el tipo de aviso nuevo (migración 031).</summary>
+    private const int ErrorCheckIncumplido = 3819;
+
     public async Task ResponderAsync(int comunidadId, int usuarioId, DateTime ahoraUtc, Func<ContextoAsistencia, CambioAsistencia> decidir,
         CancellationToken ct = default)
     {
@@ -55,10 +58,12 @@ public sealed class AsistenciaRepository : IAsistenciaRepository
                                         select p.UsuarioId)
             .ToListAsync(ct);
 
+        var miNombre = await _db.Usuarios.AsNoTracking().Where(u => u.Id == usuarioId).Select(u => u.Nombre).FirstOrDefaultAsync(ct) ?? "";
+
         var cambio = decidir(new ContextoAsistencia(
             comunidad, mia?.Estado, puedeVerla,
             ReglasDescubrir.Confirmados(confirmadosEnTabla, creadorEnTabla),
-            cruce, pendientesConAviso));
+            cruce, pendientesConAviso, miNombre));
 
         if (cambio.Guardar)
         {
@@ -92,7 +97,33 @@ public sealed class AsistenciaRepository : IAsistenciaRepository
                  ON DUPLICATE KEY UPDATE mensaje = VALUES(mensaje), leida = FALSE, activa = TRUE, created_at = VALUES(created_at)
                  """, ct);
 
+        if (cambio.Guardar && cambio.AvisoCreadora is not null && comunidad.CreadorId != usuarioId)
+            await AvisarCreadoraAsync(comunidad.CreadorId, comunidadId, cambio.AvisoCreadora, ahoraUtc, ct);
+
         await tx.CommitAsync(ct);
+    }
+
+    /// <summary>
+    /// Un solo aviso por comunidad para quien la creó (uq_notif_comunidad): cada cambio reemplaza el mensaje y lo deja sin
+    /// leer. Si la base todavía no tiene la migración 031, el CHECK lo rechaza y se sigue sin aviso: la asistencia no se pierde.
+    /// </summary>
+    private async Task AvisarCreadoraAsync(int creadoraId, int comunidadId, string mensaje, DateTime ahoraUtc, CancellationToken ct)
+    {
+        var quiere = await _db.Usuarios.AnyAsync(u => u.Id == creadoraId && u.Activo && u.NotificacionesActivas, ct);
+        if (!quiere) return;
+        try
+        {
+            await _db.Database.ExecuteSqlAsync(
+                $"""
+                 INSERT INTO notificacion (usuario_id, tipo, comunidad_id, mensaje, leida, activa, created_at)
+                 VALUES ({creadoraId}, {Notificacion.TipoAsistenciaComunidad}, {comunidadId}, {mensaje}, FALSE, TRUE, {ahoraUtc})
+                 ON DUPLICATE KEY UPDATE mensaje = VALUES(mensaje), leida = FALSE, activa = TRUE, created_at = VALUES(created_at)
+                 """, ct);
+        }
+        catch (MySqlConnector.MySqlException ex) when (ex.Number == ErrorCheckIncumplido)
+        {
+            // Base sin la 031: no hay aviso, pero la respuesta del estudiante ya quedó guardada.
+        }
     }
 
     public async Task<ParticipantesComunidad?> ObtenerParticipantesAsync(int comunidadId, CancellationToken ct = default)

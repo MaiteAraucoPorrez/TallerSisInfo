@@ -96,6 +96,32 @@ public static class ReglasAsistencia
         return Armar(corta);
     }
 
+    /// <summary>
+    /// Aviso a quien creó la comunidad: solo cuando alguien pasa a «voy» o deja de ir después de haber confirmado.
+    /// Rechazar una invitación sin haber dicho que iba no avisa (no cambia nada para el grupo). Null = no hay aviso.
+    /// </summary>
+    public static string? MensajeParaCreadora(string? estadoAntes, string estadoDespues, bool cambia, string nombre,
+        string actividad, int confirmados, int maximo)
+    {
+        if (!cambia || estadoAntes == estadoDespues) return null;
+
+        var quien = string.IsNullOrWhiteSpace(nombre) ? "Alguien" : nombre.Trim();
+        string? Armar(string a) => estadoDespues switch
+        {
+            Participacion.EstadoConfirmado => $"{quien} se sumó a «{a}». Van {confirmados} de {maximo}.",
+            Participacion.EstadoRechazado when estadoAntes == Participacion.EstadoConfirmado
+                => $"{quien} ya no va a «{a}». Van {confirmados} de {maximo}.",
+            _ => null,
+        };
+
+        var mensaje = Armar(actividad);
+        if (mensaje is null || mensaje.Length <= MaximoLargoAviso) return mensaje;
+
+        var sobra = mensaje.Length - MaximoLargoAviso + 1;
+        var corta = actividad[..Math.Max(1, actividad.Length - sobra)].TrimEnd() + "…";
+        return Armar(corta);
+    }
+
     public static int Orden(string estado) => estado switch
     {
         Participacion.EstadoConfirmado => 0,
