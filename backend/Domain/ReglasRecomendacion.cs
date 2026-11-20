@@ -4,6 +4,13 @@ public static class ReglasRecomendacion
 {
     public const string MensajeSinResultados = "No encontramos opciones cercanas para este tiempo disponible.";
 
+    /// <summary>Sin sede no hay desde dónde medir distancias: se le pide elegir su campus en vez de decir «no hay opciones».</summary>
+    public const string EstadoSinZona = "SIN_ZONA";
+    public const string MensajeSinZona = "Elige tu campus en Ubicación y te recomendamos lugares cerca de ti.";
+
+    /// <summary>Cuántos motivos de «porque te gusta…» se muestran por lugar.</summary>
+    public const int MaximoMotivosDeGusto = 2;
+
     public const int MaximoRecomendaciones = 3;
 
     public const int MaximoLargoEntrada = 300;
@@ -35,6 +42,24 @@ public static class ReglasRecomendacion
                .Select(s => ReglasSeguridadIa.Evaluar(s.Explicacion)?.Categoria)
                .FirstOrDefault(c => c is not null)
            ?? ReglasSeguridadIa.CategoriaFueraDeContexto;
+
+    /// <summary>
+    /// HU30: tipos de actividad del lugar que el estudiante suele valorar bien (en el orden de sus preferencias, de la más
+    /// fuerte a la más débil). Vacío si no hay personalización o si el lugar no coincide con ninguno: no se inventa un motivo.
+    /// </summary>
+    public static IReadOnlyList<string> MotivosDeGusto(IEnumerable<string>? etiquetasDelLugar, IEnumerable<string>? leGustan)
+    {
+        if (etiquetasDelLugar is null || leGustan is null) return [];
+        var delLugar = new HashSet<string>(etiquetasDelLugar.Where(e => !string.IsNullOrWhiteSpace(e)).Select(e => e.Trim()),
+            StringComparer.OrdinalIgnoreCase);
+        return leGustan
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e.Trim())
+            .Where(delLugar.Contains)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaximoMotivosDeGusto)
+            .ToList();
+    }
 
     public static bool ExplicacionEsSegura(string? explicacion, string nombreLugar)
     {

@@ -798,6 +798,8 @@ completo y el correo de quien saludó, y le avisa con `CONEXION_ACEPTADA`. El av
 | LLM | Con personalización, el prompt agrega `PREFERENCIAS_DEL_ESTUDIANTE` `{ "leGustan": [...], "prefiereEvitar": [...] }` (solo nombres de etiquetas, hasta 3 por lado) y cada lugar trae sus `etiquetas`. `FiltrarSoloRecuperados` sigue vigente. El resumen queda guardado dentro de `log_auditoria_rag.prompt_enviado` | ✅ Definido |
 | Plan B | `ReglasRendimiento.Respaldo` ordena por: entra en el puente, afinidad, traslado, distancia | ✅ Definido |
 | Lugares viables (HU6) | `GET /api/lugares/viables` **no** se personaliza: sigue mostrando todo lo que cabe, por distancia | ✅ Definido |
+| «Porque te gusta…» | Cada recomendación trae `porQueTeGusta`: las etiquetas del lugar que están en `leGustan`, en ese orden, máximo 2 (`ReglasRecomendacion.MotivosDeGusto`). Vacía sin personalización o sin coincidencias; nunca se inventa un motivo. También en el plan B | ✅ Definido (Maite) |
+| Sin campus (HU7) | Si el estudiante no eligió su campus, `POST /api/recomendaciones` responde `estado` = `SIN_ZONA` y «Elige tu campus en Ubicación y te recomendamos lugares cerca de ti.» sin llamar a la IA (auditoría `SIN_RESULTADOS`) | ✅ Definido (Maite) |
 | Errores | `500 ERROR_INESPERADO` con código de seguimiento | ✅ Definido |
 | Para el estudiante | Sin cambios en la respuesta ni pantallas nuevas en la v1 («Porque te gustó…» queda fuera) | ✅ Definido |
 
