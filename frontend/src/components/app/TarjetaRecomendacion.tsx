@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import ArteCategoria from "@/components/inicio/ArteCategoria";
 import { Recomendacion, Valoracion, guardarFeedback } from "@/lib/recomendaciones";
+import { textoPorQueTeGusta } from "@/lib/reglasRecomendaciones";
 import { IconoCheck, IconoDestello, IconoPin, IconoPulgarAbajo, IconoPulgarArriba, IconoReloj } from "./Iconos";
 import { NumeroAnimado, RESORTE_TOQUE, SALIDA } from "./Movimiento";
 import Puntuacion, { SelloVerificado } from "./Puntuacion";
@@ -23,6 +24,7 @@ type Props = {
 
 export default function TarjetaRecomendacion({ recomendacion: r, destacada = false }: Props) {
   const reducir = useReducedMotion();
+  const porQue = textoPorQueTeGusta(r.porQueTeGusta);
   return (
     <motion.article
       className={`${destacada ? estilos.destacada : estilos.tarjeta} lugar-arte`}
@@ -52,6 +54,14 @@ export default function TarjetaRecomendacion({ recomendacion: r, destacada = fal
           <IconoDestello tamano={16} />
           <span>{r.explicacion}</span>
         </p>
+
+        {/* HU30: por qué salió este lugar según tus «me gusta». Solo aparece cuando la búsqueda se personalizó. */}
+        {porQue && (
+          <p className={estilos.porQue}>
+            <IconoPulgarArriba tamano={14} />
+            <span>{porQue}</span>
+          </p>
+        )}
 
         <dl className={estilos.metricas}>
           <div>
