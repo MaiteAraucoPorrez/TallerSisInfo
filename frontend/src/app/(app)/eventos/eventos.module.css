@@ -366,44 +366,62 @@
   gap: 10px;
 }
 
+/* Mismos botones que el resto de la app (.hz-btn): 14 px de radio, 46 px de alto, degradado marino y presión al tocar. */
 .botonPrimario,
 .botonSecundario,
 .botonPeligro {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 43px;
-  padding: 9px 16px;
-  border: 1px solid transparent;
-  border-radius: 12px;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--ucb-marino);
   font: inherit;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 160ms ease, background-color 160ms ease;
+  touch-action: manipulation;
+  transition: transform 160ms var(--curva-salida), background-color 200ms ease, box-shadow 200ms ease;
 }
 
 .botonPrimario {
-  background: var(--ucb-marino);
-  color: white;
-}
-
-.botonSecundario {
-  border-color: var(--borde-suave);
-  background: var(--superficie);
-  color: var(--ucb-marino);
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--ucb-marino-2), var(--ucb-marino));
+  color: #fff;
+  box-shadow: 0 12px 24px -14px rgba(5, 40, 69, 0.8);
 }
 
 .botonPeligro {
-  border-color: var(--error-fondo);
-  background: var(--error-fondo);
+  border-color: var(--error-borde);
   color: var(--error);
 }
 
-.botonPrimario:hover:not(:disabled),
-.botonSecundario:hover:not(:disabled),
-.botonPeligro:hover:not(:disabled) {
-  transform: translateY(-1px);
+.botonPrimario:active:not(:disabled),
+.botonSecundario:active:not(:disabled),
+.botonPeligro:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.botonPrimario:focus-visible,
+.botonSecundario:focus-visible,
+.botonPeligro:focus-visible {
+  outline: 3px solid var(--ucb-celeste);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .botonPrimario:hover:not(:disabled),
+  .botonSecundario:hover:not(:disabled) {
+    box-shadow: var(--sombra-2);
+  }
+
+  .botonPeligro:hover:not(:disabled) {
+    background: var(--error-fondo);
+  }
 }
 
 .botonPrimario:disabled,

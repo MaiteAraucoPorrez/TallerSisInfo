@@ -685,9 +685,11 @@
     box-shadow 200ms var(--curva-salida);
 }
 
-.actividad:hover {
-  border-color: var(--ucb-celeste);
-  box-shadow: 0 0 0 3px rgba(47, 127, 209, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .actividad:hover {
+    border-color: var(--ucb-celeste);
+    box-shadow: 0 0 0 3px rgba(47, 127, 209, 0.12);
+  }
 }
 
 .actividad:focus-visible {
