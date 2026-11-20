@@ -81,7 +81,17 @@ public class RecomendacionService
             }).ToList()
         };
 
+        // Sin sede no hay distancias: se le pide elegir su campus (la auditoría queda como sin resultados, igual que antes).
+        if (contexto.ZonaId is null)
+        {
+            await _repo.GuardarAsync(log, [], ct);
+            return new RespuestaRecomendacionDto(log.Id, ReglasRecomendacion.EstadoSinZona, ReglasRecomendacion.MensajeSinZona, []);
+        }
+
         if (candidatos.Count == 0) return await SinResultadosAsync(log, ct);
+
+        // HU30: «Porque te gusta…» solo si la búsqueda se personalizó (con menos de 3 votos no hay preferencias que mostrar).
+        var leGustan = contexto.Personalizado ? contexto.Preferencias?.LeGustan : null;
 
         // HU30: el LLM recibe el resumen de preferencias (solo etiquetas); FiltrarSoloRecuperados sigue mandando abajo.
         var prompt = PromptRecomendacion.Construir(candidatos, minutosDisponibles, entrada, contexto.Preferencias);
@@ -97,7 +107,7 @@ public class RecomendacionService
         }
         catch (Exception) when (!ct.IsCancellationRequested)
         {
-            return await RespaldoAsync(log, candidatos, minutosDisponibles, contexto.Personalizado, reloj, ct);
+            return await RespaldoAsync(log, candidatos, minutosDisponibles, contexto.Personalizado, leGustan, reloj, ct);
         }
 
         log.Modelo = respuesta.Modelo;
@@ -130,11 +140,11 @@ public class RecomendacionService
 
         var porId = candidatos.ToDictionary(l => l.LugarId);
         return new RespuestaRecomendacionDto(log.Id, EstadoRespuestaOk, null,
-            recomendaciones.Select(r => ADto(r, porId[r.LugarId])).ToList());
+            recomendaciones.Select(r => ADto(r, porId[r.LugarId], leGustan)).ToList());
     }
 
     private async Task<RespuestaRecomendacionDto> RespaldoAsync(LogAuditoriaRag log, List<LugarCandidato> candidatos, int minutosDisponibles,
-        bool personalizado, Stopwatch reloj, CancellationToken ct)
+        bool personalizado, IReadOnlyList<string>? leGustan, Stopwatch reloj, CancellationToken ct)
     {
         // HU30: el plan B también respeta la afinidad (y los vetados ya no están entre los candidatos).
         var elegidos = ReglasRendimiento.Respaldo(
@@ -155,7 +165,7 @@ public class RecomendacionService
 
         var porId = candidatos.ToDictionary(l => l.LugarId);
         return new RespuestaRecomendacionDto(log.Id, EstadoRespuestaOk, ReglasRendimiento.MensajeRespaldo,
-            recomendaciones.Select(r => ADto(r, porId[r.LugarId])).ToList());
+            recomendaciones.Select(r => ADto(r, porId[r.LugarId], leGustan)).ToList());
     }
 
     private async Task<RespuestaRecomendacionDto> SinResultadosAsync(LogAuditoriaRag log, CancellationToken ct)
@@ -176,9 +186,9 @@ public class RecomendacionService
         return saneada.Length == 0 ? null : saneada;
     }
 
-    private static RecomendacionDto ADto(Recomendacion r, LugarCandidato l) =>
+    private static RecomendacionDto ADto(Recomendacion r, LugarCandidato l, IReadOnlyList<string>? leGustan) =>
         new(r.Id, l.LugarId, l.Nombre, l.Categoria, l.DistanciaM, l.TiempoTrasladoMin, l.DuracionEstimadaMin, r.Explicacion, r.Feedback, l.FotoUrl,
-            l.Puntuacion, l.Votos, l.Validado);
+            l.Puntuacion, l.Votos, l.Validado, ReglasRecomendacion.MotivosDeGusto(l.Etiquetas, leGustan));
 
     public async Task<FeedbackGuardadoDto> GuardarFeedbackAsync(int usuarioId, long recomendacionId, string? feedback, CancellationToken ct = default)
     {

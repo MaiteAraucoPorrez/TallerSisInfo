@@ -24,7 +24,9 @@ public record RecomendacionDto(
     decimal? Puntuacion = null,
     int Votos = 0,
     /// <summary>El lugar fue verificado por el equipo (<c>lugar.validado</c>).</summary>
-    bool Verificado = false
+    bool Verificado = false,
+    /// <summary>HU30: tipos de actividad del lugar que al estudiante le suelen gustar («Porque te gusta…»). Vacío sin personalización.</summary>
+    IReadOnlyList<string>? PorQueTeGusta = null
 );
 
 public record FeedbackRecomendacionDto(string? Feedback);

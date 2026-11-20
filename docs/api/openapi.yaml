@@ -1330,6 +1330,13 @@ paths:
         Si no hay lugares viables, no se llama al asistente y se responde `200` con `estado` = `SIN_RESULTADOS`
         y el mensaje «No encontramos opciones cercanas para este tiempo disponible.».
 
+        Si el estudiante todavía no eligió su campus, tampoco se llama al asistente: `200` con `estado` = `SIN_ZONA`
+        y el mensaje «Elige tu campus en Ubicación y te recomendamos lugares cerca de ti.» (la auditoría queda como
+        `SIN_RESULTADOS`).
+
+        **HU30:** con la búsqueda personalizada (3 votos o más), cada recomendación trae `porQueTeGusta`: los tipos de
+        actividad del lugar que el estudiante suele valorar bien (máximo 2). Sin personalización, la lista va vacía.
+
         **HU19:** responde en menos de 3,5 s. Si el asistente no contesta en 2,8 s o falla, se recomiendan los lugares
         más cercanos de los ya recuperados (`estado` = `OK`, con `mensaje` explicándolo; en la auditoría, `modelo` =
         `respaldo-sin-ia`). Por eso ya no responde 503.
@@ -1346,7 +1353,7 @@ paths:
               entrada: Estoy cansado, quiero algo tranquilo
       responses:
         '200':
-          description: Recomendaciones (`OK`) o mensaje de que no hay opciones (`SIN_RESULTADOS`).
+          description: Recomendaciones (`OK`), mensaje de que no hay opciones (`SIN_RESULTADOS`) o de que falta elegir el campus (`SIN_ZONA`).
           content:
             application/json:
               schema:
@@ -2659,8 +2666,8 @@ components:
           example: 42
         estado:
           type: string
-          enum: [OK, SIN_RESULTADOS]
-          description: '`OK` = hay recomendaciones. `SIN_RESULTADOS` = no hay; se muestra `mensaje`.'
+          enum: [OK, SIN_RESULTADOS, SIN_ZONA]
+          description: '`OK` = hay recomendaciones. `SIN_RESULTADOS` = no hay; se muestra `mensaje`. `SIN_ZONA` = el estudiante no eligió su campus; se muestra `mensaje` y un enlace a Ubicación.'
           example: OK
         mensaje:
           type: string
@@ -2679,6 +2686,12 @@ components:
         puntuacion: { type: number, format: double, nullable: true, minimum: 1, maximum: 5, example: 4.5, description: 'De 1 a 5 con un decimal, a partir de los votos de los estudiantes (me gusta / no me sirve, HU9): 1 + 4 × (me gusta + 1) / (votos + 2). null si nadie votó.' }
         votos: { type: integer, format: int32, minimum: 0, example: 22, description: Cuántos votos respaldan la puntuación. }
         verificado: { type: boolean, example: true, description: El lugar fue verificado por el equipo (`lugar.validado`). }
+        porQueTeGusta:
+          type: array
+          items: { type: string }
+          maxItems: 2
+          example: [Deporte, Aire libre]
+          description: 'HU30: tipos de actividad del lugar que al estudiante le suelen gustar, de la preferencia más fuerte a la más débil («Porque te gusta…»). Vacía sin personalización o sin coincidencias.'
         id:
           type: integer
           format: int64
