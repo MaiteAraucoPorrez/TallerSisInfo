@@ -83,7 +83,9 @@ export default function Onboarding() {
                 </motion.div>
               </div>
 
-              <motion.figure className={styles.testimonio} {...aparece(0.6)}>
+              {/* La entrada la anima motion en el envoltorio; la flotación es CSS en la tarjeta, así no se pisan los transform. */}
+              <motion.div className={styles.testimonioLugar} {...aparece(0.6)}>
+              <figure className={styles.testimonio}>
                 <div className={styles.testimonioCabeza}>
                   <Image src={fotoValeria} alt="" width={48} height={48} className={styles.avatar} />
                   <figcaption>
@@ -98,7 +100,8 @@ export default function Onboarding() {
                   «Los martes tenía dos horas muertas y siempre terminaba en el celular. Ahora BreakU me avisa cuando
                   empieza mi puente y ya sé a dónde ir: la biblio para repasar o la cafetería con mis amigas.»
                 </blockquote>
-              </motion.figure>
+              </figure>
+              </motion.div>
             </div>
           )}
         </section>
