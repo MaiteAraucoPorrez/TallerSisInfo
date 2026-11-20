@@ -608,8 +608,9 @@ function Resultado({
                   <strong>{c.nombre}</strong>
                   {meta && <small>{meta}</small>}
                 </div>
-                <span className={estilos.porcentaje} aria-label={`${c.compatibilidad} % compatibles`}>
-                  {c.compatibilidad}
+                {/* Solo el test: qué tanto se parecen. El tiempo que comparten va aparte, en la línea de abajo. */}
+                <span className={estilos.porcentaje} aria-label={`${c.afinidad} % de afinidad`} title="Qué tanto se parecen según el test">
+                  {c.afinidad}
                   <small>%</small>
                 </span>
               </div>

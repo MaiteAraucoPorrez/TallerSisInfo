@@ -15,9 +15,9 @@ export type CompaneroCompatible = {
   minutosEnComun: number;
   porcentaje: number;
   franjasCompartidas: number;
-  /** Qué tanto se parecen según el test (0–100). */
+  /** Qué tanto se parecen según el test (50–100: por debajo no son compatibles y no llegan). Es el número que se muestra. */
   afinidad: number;
-  /** Lo que se muestra: 60 % test y 40 % tiempo libre. */
+  /** 60 % test y 40 % tiempo libre. Ya no se muestra: mezclaba el tiempo con «qué tan compatibles son». */
   compatibilidad: number;
   enComun: string[];
   conexion: ConexionResumen | null;
