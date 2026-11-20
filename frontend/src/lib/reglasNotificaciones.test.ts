@@ -25,6 +25,12 @@ test("quien creó la comunidad ve quién se sumó o se bajó y va a su comunidad
   assert.equal(rutaNotificacion({ tipo: "ASISTENCIA_COMUNIDAD", comunidadId: 12 }), "/comunidades?pestana=descubrir&comunidad=12");
 });
 
+test("la invitación de una conexión a un evento lleva a su detalle", () => {
+  assert.equal(presentacionNotificacion("INVITACION_EVENTO").icono, "calendario");
+  assert.equal(rutaNotificacion({ tipo: "INVITACION_EVENTO", eventoId: 14 }), "/eventos/14");
+  assert.equal(rutaNotificacion({ tipo: "INVITACION_EVENTO" }), "/eventos");
+});
+
 test("la bandeja vacía explica «Sin leer» y le habla al admin de lo suyo", () => {
   assert.equal(bandejaVacia("sin-leer", false).titulo, "Ya leíste todo");
   assert.match(bandejaVacia("todas", true).detalle, /reporte/);
