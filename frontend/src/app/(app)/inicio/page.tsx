@@ -497,6 +497,9 @@ export default function Inicio() {
         </p>
       </Pieza>
 
+      {/* Debajo de las sugerencias: con quién aprovechar ese mismo rato. Equilibra las dos columnas en la laptop. */}
+      <LibresContigoAhora puente={puenteSugerencias} cuando={cuandoLibres} className={estilos.zonaLibres} />
+
       </div>
 
       <div className={estilos.columnaDerecha}>
@@ -550,9 +553,8 @@ export default function Inicio() {
         </MotionLink>
       </Pieza>
 
-      {/* Llenan la columna derecha en la laptop: qué pasa hoy en el campus y quién está libre a tu misma hora. */}
+      {/* En la laptop, la columna derecha cierra con lo que pasa hoy en el campus. */}
       <HoyEnElCampus className={estilos.zonaHoy} />
-      <LibresContigoAhora puente={puenteSugerencias} cuando={cuandoLibres} className={estilos.zonaLibres} />
 
       </div>
 
